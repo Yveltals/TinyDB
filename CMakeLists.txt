@@ -40,6 +40,7 @@ include(GNUInstallDirs)
 add_library(tinydb "")
 target_sources(tinydb
   PRIVATE
+    "db/skiplist.h"
     "util/arena.cc"
     "util/arena.h"
     "util/hash.h"
@@ -47,8 +48,7 @@ target_sources(tinydb
     "util/coding.h"
     "util/coding.cc"
     "util/cache.cc"
-    # "util/env_posix.cc"
-    # "util/posix_logger.h"
+    "util/bloom.cc"
 
   PUBLIC
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/c.h"
@@ -58,10 +58,10 @@ target_sources(tinydb
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/dumpfile.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/env.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/export.h"
-  #   "${TINYDB_PUBLIC_INCLUDE_DIR}/filter_policy.h"
+    "${TINYDB_PUBLIC_INCLUDE_DIR}/filter_policy.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/iterator.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/options.h"
-  #   "${TINYDB_PUBLIC_INCLUDE_DIR}/slice.h"
+    "${TINYDB_PUBLIC_INCLUDE_DIR}/slice.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/status.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/table_builder.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/table.h"
