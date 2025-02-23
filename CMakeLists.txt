@@ -24,6 +24,8 @@ check_cxx_symbol_exists(fdatasync "unistd.h" HAVE_FDATASYNC)
 check_cxx_symbol_exists(F_FULLFSYNC "fcntl.h" HAVE_FULLFSYNC)
 check_cxx_symbol_exists(O_CLOEXEC "fcntl.h" HAVE_O_CLOEXEC)
 
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wthread-safety HAVE_CLANG_THREAD_SAFETY)
 
 set(TINYDB_PUBLIC_INCLUDE_DIR "include/tinydb")
 set(TINYDB_PORT_CONFIG_DIR "include/port")
@@ -41,6 +43,14 @@ add_library(tinydb "")
 target_sources(tinydb
   PRIVATE
     "db/skiplist.h"
+    "db/memtable.h"
+    "db/memtable.cc"
+    "db/dbformat.h"
+    "db/dbformat.cc"
+    "db/log_reader.h"
+    "db/log_reader.cc"
+    "db/log_writer.h"
+    "db/log_writer.cc"
     "util/arena.cc"
     "util/arena.h"
     "util/hash.h"
@@ -52,6 +62,7 @@ target_sources(tinydb
     "util/logging.h"
     "util/logging.cc"
     "util/status.cc"
+    "util/env.cc"
 
   PUBLIC
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/c.h"
@@ -59,7 +70,7 @@ target_sources(tinydb
     "${TINYDB_PUBLIC_INCLUDE_DIR}/comparator.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/db.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/dumpfile.h"
-  #   "${TINYDB_PUBLIC_INCLUDE_DIR}/env.h"
+    "${TINYDB_PUBLIC_INCLUDE_DIR}/env.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/export.h"
     "${TINYDB_PUBLIC_INCLUDE_DIR}/filter_policy.h"
     "${TINYDB_PUBLIC_INCLUDE_DIR}/iterator.h"
@@ -81,9 +92,6 @@ target_include_directories(tinydb
 set_target_properties(tinydb
   PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
 
-if(HAVE_CRC32C)
-  target_link_libraries(tinydb crc32c)
-endif(HAVE_CRC32C)
 if(HAVE_SNAPPY)
   target_link_libraries(tinydb snappy)
 endif(HAVE_SNAPPY)
@@ -93,3 +101,41 @@ endif(HAVE_ZSTD)
 if(HAVE_TCMALLOC)
   target_link_libraries(tinydb tcmalloc)
 endif(HAVE_TCMALLOC)
+
+
+option(TINYDB_BUILD_TESTS "Build unit tests" OFF)
+
+if(TINYDB_BUILD_TESTS)
+  enable_testing()
+
+  # Prevent overriding the parent project's compiler/linker settings on Windows.
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(install_gtest OFF)
+  set(install_gmock OFF)
+  set(build_gmock ON)
+
+  # This project is tested using GoogleTest.
+  add_subdirectory("third_party/googletest")
+
+  # GoogleTest triggers a missing field initializers warning.
+  if(TINYDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+    set_property(TARGET gtest
+        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+    set_property(TARGET gmock
+        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+  endif(TINYDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+
+  add_executable(tinydb_tests "")
+  target_sources(tinydb_tests
+    PRIVATE
+      "db/log_test.cc"
+  )
+  target_link_libraries(tinydb_tests tinydb gmock gtest gtest_main)
+  target_compile_definitions(tinydb_tests
+    PRIVATE
+      ${TINYDB_PLATFORM_NAME}=1
+  )
+
+  add_test(NAME "tinydb_tests" COMMAND "tinydb_tests")
+
+endif(TINYDB_BUILD_TESTS)

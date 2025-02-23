@@ -70,4 +70,4 @@ inline int Slice::compare(const Slice& b) const {
   return r;
 }
 
-}  // namespace tinydb
+} // namespace tinydb
