@@ -51,6 +51,8 @@ target_sources(tinydb
     "db/log_reader.cc"
     "db/log_writer.h"
     "db/log_writer.cc"
+    "db/write_batch_internal.h"
+    "db/write_batch.cc"
     "util/arena.cc"
     "util/arena.h"
     "util/hash.h"
@@ -79,7 +81,7 @@ target_sources(tinydb
     "${TINYDB_PUBLIC_INCLUDE_DIR}/status.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/table_builder.h"
   #   "${TINYDB_PUBLIC_INCLUDE_DIR}/table.h"
-  #   "${TINYDB_PUBLIC_INCLUDE_DIR}/write_batch.h"
+    "${TINYDB_PUBLIC_INCLUDE_DIR}/write_batch.h"
 )
 
 
