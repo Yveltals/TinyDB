@@ -1,11 +1,22 @@
 #pragma once
 
+#include <cstring>
+#include <fstream>
+#include <memory>
+#include <string>
 #include <vector>
 #include "tinydb/status.h"
 
+
+#define THREAD_ANNOTATION_ATTRIBUTE__(x) __attribute__((x))
+#define GUARDED_BY(x) THREAD_ANNOTATION_ATTRIBUTE__(guarded_by(x))
+
 namespace tinydb {
 
+constexpr const size_t kWritableFileBufferSize = 65536;
+
 class SequentialFile;
+class RandomAccessFile;
 class WritableFile;
 
 class Env {
@@ -13,36 +24,74 @@ class Env {
   Env();
   Env(const Env&) = delete;
   Env& operator=(const Env&) = delete;
-  virtual ~Env();
+  ~Env();
 
-  virtual Status NewSequentialFile(const std::string& fname,
-                                   SequentialFile** result) = 0;
+  Status NewSequentialFile(const std::string& filename,
+                                   SequentialFile** result);
 
-  virtual Status NewWritableFile(const std::string& fname,
-                                 WritableFile** result) = 0;
+  Status NewRandomAccessFile(const std::string& filename,
+                             RandomAccessFile** result);
+  
+  Status NewWritableFile(const std::string& filename,
+                                 WritableFile** result);
 };
 
 class SequentialFile {
  public:
-  SequentialFile() = default;
+  SequentialFile(const std::string& filename) : filename_(filename) {
+    file_.open(filename, std::ios::in | std::ios::binary);
+  };
   SequentialFile(const SequentialFile&) = delete;
   SequentialFile& operator=(SequentialFile&) = delete;
-  virtual ~SequentialFile();
+  ~SequentialFile() { file_.close(); }
+  
 
-  virtual Status Read(size_t n, Slice* result, char* scratch) = 0;
+  Status Read(size_t n, Slice* result, char* scratch);
+
+ private:
+  std::ifstream file_;
+  std::string filename_;
+};
+
+class RandomAccessFile {
+ public:
+  RandomAccessFile(const std::string& filename) : filename_(filename) {
+    file_.open(filename, std::ios::in | std::ios::binary);
+  }
+  RandomAccessFile(const RandomAccessFile&) = delete;
+  RandomAccessFile& operator=(const RandomAccessFile&) = delete;
+  ~RandomAccessFile() { file_.close(); }
+
+  Status Read(uint64_t offset, size_t n, Slice* result, char* buffer);
+
+ private:
+  std::ifstream file_;
+  std::string filename_;
 };
 
 class WritableFile {
  public:
-  WritableFile() = default;
+  WritableFile(const std::string& filename)
+      : buffer_(new char[kWritableFileBufferSize]),
+        filename_(filename) {
+    file_.open(filename, std::ios::out | std::ios::trunc);
+  };
   WritableFile(const WritableFile&) = delete;
   WritableFile& operator=(const WritableFile&) = delete;
-  virtual ~WritableFile();
+  ~WritableFile() { Close(); }
 
-  virtual Status Append(const Slice& data) = 0;
-  virtual Status Close() = 0;
-  virtual Status Flush() = 0;
-  virtual Status Sync() = 0;
+  Status Append(const Slice& data);
+  Status Close();
+  Status Flush();
+  Status Sync();
+  bool IsAvailable(int size) { return buffer_size_ - buffer_used_ >= size; }
+
+ private:
+  std::unique_ptr<char[]> buffer_;
+  int buffer_size_;
+  int buffer_used_{0};
+  std::ofstream file_;
+  std::string filename_;
 };
 
 } // namespace tinydb

@@ -1,5 +1,6 @@
 #include "tinydb/env.h"
 
+#include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
 #include <cstdio>
@@ -9,108 +10,80 @@
 
 namespace tinydb {
 
-constexpr const size_t kWritableFileBufferSize = 65536;
-
-Status PosixError(const std::string& context, int error_number) {
-  if (error_number == ENOENT) {
-    return Status::NotFound(context, std::strerror(error_number));
-  } else {
-    return Status::IOError(context, std::strerror(error_number));
+Status SequentialFile::Read(size_t n, Slice* result, char* buffer) {
+  if (!file_.is_open()) {
+    return Status::IOError(filename_, std::strerror(errno));
   }
+  file_.read(buffer, n);
+  *result = Slice(buffer, file_.gcount());
+  if (file_.gcount() != n) {
+    return Status::IOError(filename_, "read bytes not enough");
+  }
+  return Status::OK();
 }
 
-class SequentialFileImpl final : public SequentialFile {
- public:
-  SequentialFileImpl(std::string fname, int fd)
-      : fd_(fd), fname_(std::move(fname)) {}
-
-  Status Read(size_t n, Slice* result, char* scratch) override {
-    Status st;
-    while (true) {
-      auto read_size = ::read(fd_, scratch, n);
-      if (read_size < 0) {
-        if (errno == EINTR) {
-          continue;
-        }
-        st = PosixError(fname_, errno);
-        break;
-      }
-      *result = Slice(scratch, read_size);
-      break;
-    }
-    return st;
+Status WritableFile::Append(const Slice& data) {
+  size_t size = data.size();
+  const char* write_data = data.data();
+  if (!IsAvailable(size)) {
+    return Flush();
   }
+  memcpy(buffer_.get() + buffer_used_, data.data(), size);
+  buffer_used_ += size;
+  return Status::OK();
+}
 
- private:
-  const int fd_;
-  const std::string fname_;
-};
-
-class WritableFileImpl final : public WritableFile {
- public:
-  WritableFileImpl(std::string fname, int fd)
-      : buffer_(new char[kWritableFileBufferSize]), fd_(fd), fname_(std::move(fname)) {}
-  ~WritableFileImpl() override { Close(); }
-  
-
-  Status Append(const Slice& data) override {
-    size_t size = data.size();
-    const char* write_data = data.data();
-    if (!IsAvailable(size)) {
-      return Flush();
-    }
-    WriteToBuffer(data.data(), size);
-    return Status::OK();
+Status WritableFile::Flush() {
+  if (!file_.is_open()) {
+    return Status::IOError(filename_, std::strerror(errno));
   }
+  file_ << std::string(buffer_.get(), buffer_used_);
+  buffer_used_ = 0;
+  return Status::OK();
+}
 
-  void WriteToBuffer(const char *data, int size) {
-    assert(IsAvailable(size));
-    memcpy(buffer_.get() + buffer_used_, data, size);
-    buffer_used_ += size;
+Status WritableFile::Sync() {
+  auto st = Flush();
+  file_.flush();
+  return st;
+}
+
+Status WritableFile::Close() {
+  auto st = Flush();
+  file_.close();
+  return st;
+}
+
+Status RandomAccessFile::Read(uint64_t offset, size_t n, Slice* result,
+                              char* buffer) {
+  if (!file_.is_open()) {
+    return Status::IOError(filename_, std::strerror(errno));
   }
-
-  Status Flush() override {
-    while (buffer_size_ > 0) {
-      ssize_t write_result = ::write(fd_, buffer_.get(), buffer_size_);
-      if (write_result < 0) {
-        if (errno == EINTR) {
-          continue;  // Retry
-        }
-        return PosixError(fname_, errno);
-      }
-      buffer_size_ = 0;
-    }
-    return Status::OK();
+  file_.seekg(offset);
+  file_.read(buffer, n);
+  *result = Slice(buffer, file_.gcount());
+  if (file_.gcount() != n) {
+    return Status::IOError(filename_, "read bytes not enough");
   }
+  return Status::OK();
+}
 
-  Status Sync() override {
-    auto st = Flush();
-    if (!st.ok()) return st;
+Status Env::NewSequentialFile(const std::string& filename,
+                              SequentialFile** result) {
+  *result = new SequentialFile(filename);
+  return Status::OK();
+}
 
-    auto sync_success = ::fdatasync(fd_) == 0;
-    if (sync_success) {
-      return Status::OK();
-    }
-    return PosixError(fname_, errno);
-  }
+Status Env::NewRandomAccessFile(const std::string& filename,
+                                RandomAccessFile** result) {
+  *result = new RandomAccessFile(filename);
+  return Status::OK();
+}
 
-  Status Close() override {
-    auto st = Flush();
-    if (fd_ >= 0) {
-      ::close(fd_);
-      fd_ = -1;
-    }
-    return st;
-  }
-  
-  bool IsAvailable(int size) { return buffer_size_ - buffer_used_ >= size; }
-
- private:
-  std::unique_ptr<char[]> buffer_;
-  int buffer_size_;
-  int buffer_used_{0};
-  int fd_;
-  const std::string fname_;
-};
+Status Env::NewWritableFile(const std::string& filename,
+                            WritableFile** result) {
+  *result = new WritableFile(filename);
+  return Status::OK();
+}
 
 } // namespace tinydb
