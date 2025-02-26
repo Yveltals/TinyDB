@@ -65,4 +65,7 @@ class Cache {
   // cache.
   virtual size_t TotalCharge() = 0;
 };
+
+Cache* NewLRUCache(size_t capacity);
+
 }  // namespace tinydb

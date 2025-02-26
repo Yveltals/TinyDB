@@ -1,5 +1,6 @@
 #pragma once
 #include <any>
+#include <list>
 #include "tinydb/slice.h"
 #include "tinydb/status.h"
 
@@ -10,7 +11,6 @@ class Iterator {
   Iterator();
   Iterator(const Iterator&) = delete;
   Iterator& operator=(const Iterator&) = delete;
-
   virtual ~Iterator();
 
   virtual bool Valid() const = 0;
@@ -28,18 +28,16 @@ class Iterator {
 
  private:
   struct CleanupNode {
-    bool IsEmpty() const { return fun == nullptr; }
-    void Run() {
-      assert(fun != nullptr);
-      fun(arg1, arg2);
-    }
-
+    CleanupNode(CleanupFun f, std::any a, std::any b)
+        : fun(std::move(f)), arg1(a), arg2(b) {}
     CleanupFun fun;
     std::any arg1;
     std::any arg2;
-    CleanupNode* next;
   };
-  CleanupNode cleanup_head_;
+  std::list<CleanupNode> cleanup_list_;
 };
+
+Iterator* NewEmptyIterator();
+Iterator* NewErrorIterator(const Status& status);
 
 } // namespace tinydb
