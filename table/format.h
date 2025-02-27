@@ -1,8 +1,6 @@
 #pragma once
-
 #include <cstdint>
 #include <string>
-
 #include "tinydb/env.h"
 #include "tinydb/options.h"
 #include "tinydb/slice.h"

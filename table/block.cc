@@ -1,9 +1,7 @@
 #include "table/block.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <vector>
-
 #include "tinydb/comparator.h"
 #include "util/coding.h"
 #include "util/logging.h"

@@ -1,5 +1,4 @@
 #include "db/log_reader.h"
-
 #include <cstdio>
 #include <iostream>
 #include "tinydb/env.h"

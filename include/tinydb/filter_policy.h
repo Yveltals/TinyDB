@@ -1,9 +1,8 @@
 #pragma once
 #include <string>
+#include "tinydb/slice.h"
 
 namespace tinydb {
-
-class Slice;
 
 class FilterPolicy {
  public:

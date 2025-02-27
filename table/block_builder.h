@@ -1,12 +1,10 @@
 #pragma once
-
 #include <cstdint>
 #include <vector>
+#include "tinydb/options.h"
 #include "tinydb/slice.h"
 
 namespace tinydb {
-
-struct Options;
 
 class BlockBuilder {
  public:

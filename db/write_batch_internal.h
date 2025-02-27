@@ -1,5 +1,4 @@
 #pragma once
-
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "tinydb/write_batch.h"

@@ -1,13 +1,10 @@
 #pragma once
-
 #include <cstdint>
+#include "tinydb/env.h"
 #include "tinydb/slice.h"
 #include "tinydb/status.h"
 
 namespace tinydb {
-
-class WritableFile;
-
 namespace log {
 
 extern int kHeaderSize;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-
 #include "table/block.h"
 #include "table/filter_block.h"
 #include "table/format.h"
@@ -10,9 +9,6 @@
 #include "tinydb/options.h"
 
 namespace tinydb {
-
-class RandomAccessFile;
-class TableCache;
 
 using HandleResult = std::function<void(std::any, const Slice&, const Slice&)>;
 

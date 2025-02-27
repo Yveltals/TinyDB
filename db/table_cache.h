@@ -1,31 +1,31 @@
 #pragma once
-
 #include <cstdint>
 #include <string>
-
-#include <db/dbformat.h>
-#include <tinydb/cache.h>
+#include "db/dbformat.h"
+#include "tinydb/env.h"
 #include "tinydb/iterator.h"
 #include "tinydb/options.h"
-#include <tinydb/table.h>
+#include "tinydb/table.h"
 
 namespace tinydb {
 
-class Env;
-
 class TableCache {
  public:
-  TableCache(const std::string& dbname, const Options& options, int entries);
+  TableCache(const std::string& dbname, const Options& options, int entries)
+      : env_(options.env),
+        dbname_(dbname),
+        options_(options),
+        cache_(NewLRUCache(entries)) {}
   TableCache(const TableCache&) = delete;
   TableCache& operator=(const TableCache&) = delete;
-  ~TableCache();
+  ~TableCache() { delete cache_; }
 
   Iterator* NewIterator(const ReadOptions& options, uint64_t file_number,
                         uint64_t file_size, Table** tableptr = nullptr);
 
   Status Get(const ReadOptions& options, uint64_t file_number,
-             uint64_t file_size, const Slice& k, void* arg,
-             void (*handle_result)(void*, const Slice&, const Slice&));
+             uint64_t file_size, const Slice& k, std::any arg,
+             HandleResult handler);
 
   void Evict(uint64_t file_number);
 

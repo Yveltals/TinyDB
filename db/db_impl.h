@@ -1,20 +1,17 @@
 #pragma once
-
 #include <atomic>
 #include <deque>
 #include <mutex>
 #include <set>
 #include <string>
-
 #include "db/dbformat.h"
 #include "db/log_writer.h"
+#include "db/memtable.h"
+#include "db/table_cache.h"
 #include "tinydb/db.h"
 #include "tinydb/env.h"
 
 namespace tinydb {
-
-class MemTable;
-class TableCache;
 
 class DBImpl : public DB {
  public:

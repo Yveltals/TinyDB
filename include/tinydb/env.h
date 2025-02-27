@@ -26,15 +26,18 @@ class Env {
   Env& operator=(const Env&) = delete;
   ~Env();
 
-  Status NewSequentialFile(const std::string& filename,
-                                   SequentialFile** result);
+  SequentialFile* NewSequentialFile(const std::string& filename);
+  RandomAccessFile* NewRandomAccessFile(const std::string& filename);
+  WritableFile* NewWritableFile(const std::string& filename);
 
-  Status NewRandomAccessFile(const std::string& filename,
-                             RandomAccessFile** result);
-  
-  Status NewWritableFile(const std::string& filename,
-                                 WritableFile** result);
+  Status RenameFile(const std::string& from, const std::string& to);
+  Status RemoveFile(const std::string& filename);
 };
+
+static Status WriteStringToFile(Env* env, const Slice& data,
+                                const std::string& fname, bool sync);
+static Status ReadFileToString(Env* env, const std::string& fname,
+                               std::string* data);
 
 class SequentialFile {
  public:

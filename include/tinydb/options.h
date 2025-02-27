@@ -1,13 +1,11 @@
 #pragma once
-
 #include <cstddef>
+#include "tinydb/cache.h"
+#include "tinydb/comparator.h"
+#include "tinydb/env.h"
+#include "tinydb/filter_policy.h"
 
 namespace tinydb {
-
-class Cache;
-class Comparator;
-class Env;
-class FilterPolicy;
 
 struct Options {
   const Comparator* comparator;

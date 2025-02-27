@@ -1,13 +1,10 @@
 #pragma once
-
 #include <cstdint>
+#include "tinydb/env.h"
 #include "tinydb/slice.h"
 #include "tinydb/status.h"
 
 namespace tinydb {
-
-class SequentialFile;
-
 namespace log {
 
 int kHeaderSize = 2;
@@ -32,5 +29,4 @@ class Reader {
 };
 
 } // namespace log
-
 } // namespace tinydb

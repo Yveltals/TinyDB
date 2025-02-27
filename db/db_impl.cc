@@ -1,5 +1,4 @@
 #include "db/db_impl.h"
-
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -9,7 +8,6 @@
 #include <set>
 #include <string>
 #include <vector>
-
 #include "db/dbformat.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"

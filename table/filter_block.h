@@ -1,15 +1,13 @@
 #pragma once
-
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "tinydb/filter_policy.h"
 #include "tinydb/slice.h"
 #include "util/hash.h"
 
 namespace tinydb {
-
-class FilterPolicy;
 
 class FilterBlockBuilder {
  public:

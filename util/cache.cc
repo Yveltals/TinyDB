@@ -1,12 +1,10 @@
 #include "tinydb/cache.h"
-
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
-
 #include "util/hash.h"
 
 namespace tinydb {
@@ -16,7 +14,7 @@ Cache::~Cache() {}
 namespace {
 
 struct LRUHandle {
-  std::any value;  // char*
+  std::any value;
   delete_handler deleter;
   LRUHandle* next_hash;
   LRUHandle* next;
@@ -46,7 +44,6 @@ struct LRUHandleEqual {
 };
 
 class LRUCache {
-
  public:
   LRUCache() : capacity_(0), usage_(0) {
     lru_.next = &lru_;

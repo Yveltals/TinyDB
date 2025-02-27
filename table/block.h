@@ -1,14 +1,11 @@
 #pragma once
-
 #include <cstddef>
 #include <cstdint>
-
 #include "table/format.h"
 #include "tinydb/iterator.h"
+#include "tinydb/comparator.h"
 
 namespace tinydb {
-
-class Comparator;
 
 class Block {
  public:

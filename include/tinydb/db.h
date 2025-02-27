@@ -1,20 +1,14 @@
 #pragma once
-
 #include <cstdint>
 #include <cstdio>
-
 #include "tinydb/iterator.h"
 #include "tinydb/options.h"
+#include "tinydb/write_batch.h"
 
 namespace tinydb {
 
 static const int kMajorVersion = 1;
 static const int kMinorVersion = 23;
-
-struct Options;
-struct ReadOptions;
-struct WriteOptions;
-class WriteBatch;
 
 class DB {
  public:

@@ -1,9 +1,7 @@
 #pragma once
-
 #include <cstddef>
 #include <cstdint>
 #include <string>
-
 #include "tinydb/comparator.h"
 #include "tinydb/filter_policy.h"
 #include "tinydb/slice.h"

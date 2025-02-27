@@ -1,5 +1,4 @@
 #include "table/block_builder.h"
-
 #include <algorithm>
 #include <cassert>
 #include "tinydb/comparator.h"
