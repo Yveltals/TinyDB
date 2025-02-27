@@ -3,14 +3,12 @@
 #include <cstdint>
 #include <string>
 
+#include "tinydb/env.h"
+#include "tinydb/options.h"
 #include "tinydb/slice.h"
 #include "tinydb/status.h"
 
 namespace tinydb {
-
-class Block;
-class RandomAccessFile;
-struct ReadOptions;
 
 class BlockHandle {
  public:

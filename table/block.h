@@ -8,7 +8,6 @@
 
 namespace tinydb {
 
-struct BlockContents;
 class Comparator;
 
 class Block {
