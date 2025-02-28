@@ -6,8 +6,7 @@
 namespace tinydb {
 namespace log {
 
-bool Reader::ReadRecord(Slice* record, std::string* scratch) {
-  scratch->clear();
+bool Reader::ReadRecord(Slice* record) {
   record->clear();
 
   auto handle_err = [&](Status& st) {

@@ -19,8 +19,6 @@ class Writer {
   Status AddRecord(const Slice& slice);
 
  private:
-  Status EmitPhysicalRecord(const char* ptr, size_t len);
-
   WritableFile* dest_;
 };
 

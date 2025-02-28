@@ -39,7 +39,7 @@ class Table {
         filter_data_(nullptr),
         index_block_(index_block) {}
 
-  static Iterator* BlockReader(std::any, const ReadOptions&, const BlockHandle&);
+  static Iterator* BlockReader(std::any, const ReadOptions&, const Slice&);
 
   Status InternalGet(const ReadOptions&, const Slice& key, std::any arg,
                      HandleResult handler);

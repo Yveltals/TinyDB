@@ -13,13 +13,11 @@ class Reader {
  public:
   Reader(SequentialFile* file)
       : file_(file), backing_store_(new char[4096]), buffer_(), eof_(false) {}
-
   Reader(const Reader&) = delete;
   Reader& operator=(const Reader&) = delete;
-
   ~Reader() { delete[] backing_store_; }
 
-  bool ReadRecord(Slice* record, std::string* scratch);
+  bool ReadRecord(Slice* record);
 
  private:
   SequentialFile* const file_;

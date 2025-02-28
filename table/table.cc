@@ -86,36 +86,40 @@ static void ReleaseBlock(std::any arg, std::any h) {
 // Read data block (optional from cache)
 // Return Block Iterator to seek keys
 Iterator* Table::BlockReader(std::any arg, const ReadOptions& options,
-                             const BlockHandle& handle) {
+                             const Slice& handle_value) {
   auto table = std::any_cast<Table*>(arg);
   auto block_cache = table->options_.block_cache;
   Block* block = nullptr;
   Cache::Handle* cache_handle = nullptr;
 
-  BlockContents contents;
-  Status st;
-  if (block_cache) {
-    char cache_key_buffer[16]; // cache_id + block_offset
-    EncodeFixed64(cache_key_buffer, table->cache_id_);
-    EncodeFixed64(cache_key_buffer + 8, handle.offset());
-    Slice key(cache_key_buffer, sizeof(cache_key_buffer));
-    cache_handle = block_cache->Lookup(key);
-    if (cache_handle) {
-      block = std::any_cast<Block*>(block_cache->Value(cache_handle));
+  BlockHandle handle;
+  Slice input = handle_value;
+  Status st = handle.DecodeFrom(&input);
+  if (st.ok()) {
+    BlockContents contents;
+    if (block_cache) {
+      char cache_key_buffer[16]; // cache_id + block_offset
+      EncodeFixed64(cache_key_buffer, table->cache_id_);
+      EncodeFixed64(cache_key_buffer + 8, handle.offset());
+      Slice key(cache_key_buffer, sizeof(cache_key_buffer));
+      cache_handle = block_cache->Lookup(key);
+      if (cache_handle) {
+        block = std::any_cast<Block*>(block_cache->Value(cache_handle));
+      } else {
+        st = ReadBlock(table->file_, options, handle, &contents);
+        if (st.ok()) {
+          block = new Block(contents);
+          if (contents.cachable && options.fill_cache) {
+            cache_handle = block_cache->Insert(key, std::any(block),
+                                              block->size(), &DeleteCachedBlock);
+          }
+        }
+      }
     } else {
       st = ReadBlock(table->file_, options, handle, &contents);
       if (st.ok()) {
         block = new Block(contents);
-        if (contents.cachable && options.fill_cache) {
-          cache_handle = block_cache->Insert(key, std::any(block),
-                                             block->size(), &DeleteCachedBlock);
-        }
       }
-    }
-  } else {
-    st = ReadBlock(table->file_, options, handle, &contents);
-    if (st.ok()) {
-      block = new Block(contents);
     }
   }
 
@@ -154,8 +158,8 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& key,
       // Not found by filter
     } else {
       // Seek the key in block
-      auto block_iter = std::unique_ptr<Iterator>(
-          BlockReader(std::any(this), options, handle));
+      std::unique_ptr<Iterator> block_iter(
+          BlockReader(std::any(this), options, iiter->value()));
       block_iter->Seek(key);
       if (block_iter->Valid()) {
         handler(arg, block_iter->key(), block_iter->value());

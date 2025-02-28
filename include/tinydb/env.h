@@ -34,9 +34,9 @@ class Env {
   Status RemoveFile(const std::string& filename);
 };
 
-static Status WriteStringToFile(Env* env, const Slice& data,
+Status WriteStringToFile(Env* env, const Slice& data,
                                 const std::string& fname, bool sync);
-static Status ReadFileToString(Env* env, const std::string& fname,
+Status ReadFileToString(Env* env, const std::string& fname,
                                std::string* data);
 
 class SequentialFile {

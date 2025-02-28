@@ -81,17 +81,11 @@ void TwoLevelIterator::InitDataBlock() {
     return;
   }
   Slice handle_value = index_iter_.value();
-  BlockHandle handle;
-  auto st = handle.DecodeFrom(&handle_value);
-  if (!st.ok()) {
-    SetDataIterator(nullptr);
-    return;
-  }
   if (data_iter_.iter() && handle_value.compare(data_block_handle_) == 0) {
     // data_iter_ is already constructed with this iterator, so
     // no need to change anything
   } else {
-    Iterator* iter = block_function_(arg_, options_, handle);
+    Iterator* iter = block_function_(arg_, options_, handle_value);
     data_block_handle_.assign(handle_value.data(), handle_value.size());
     SetDataIterator(iter);
   }

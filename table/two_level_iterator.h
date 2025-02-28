@@ -10,7 +10,7 @@
 namespace tinydb {
 
 using BlockFunction = std::function<Iterator*(
-    std::any arg, const ReadOptions& options, const BlockHandle&)>;
+    std::any arg, const ReadOptions& options, const Slice&)>;
 
 class TwoLevelIterator : public Iterator {
  public:
