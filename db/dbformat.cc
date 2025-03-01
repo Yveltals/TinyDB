@@ -5,56 +5,26 @@
 
 namespace tinydb {
 
-static uint64_t PackSequenceAndType(uint64_t seq, ValueType t) {
-  assert(seq <= kMaxSequenceNumber);
-  assert(t <= kValueTypeForSeek);
-  return (seq << 8) | t;
+std::string InternalKey::DebugString() const {
+  std::ostringstream ss;
+  ss << '\'' << EscapeString(user_key_.ToString()) << "' @ " << sequence_
+     << " : " << static_cast<int>(type_);
+  return ss.str();
 }
 
-void AppendInternalKey(std::string* result, const ParsedInternalKey& key) {
-  result->append(key.user_key.data(), key.user_key.size());
-  PutFixed64(result, PackSequenceAndType(key.sequence, key.type));
-}
-
-bool ParseInternalKey(const Slice& internal_key,
-                             ParsedInternalKey* result) {
-  const size_t n = internal_key.size();
+bool InternalKey::DecodeFrom(const Slice& s) {
+  const size_t n = s.size();
   if (n < 8) return false;
-  uint64_t num = DecodeFixed64(internal_key.data() + n - 8);
+  uint64_t num = DecodeFixed64(s.data() + n - 8);
   uint8_t c = num & 0xff;
-  result->sequence = num >> 8;
-  result->type = static_cast<ValueType>(c);
-  result->user_key = Slice(internal_key.data(), n - 8);
+  sequence_ = num >> 8;
+  type_ = static_cast<ValueType>(c);
+  user_key_ = Slice(s.data(), n - 8);
+  data_.assign(s.data(), s.size());
   return (c <= static_cast<uint8_t>(kTypeValue));
 }
 
-std::string ParsedInternalKey::DebugString() const {
-  std::ostringstream ss;
-  ss << '\'' << EscapeString(user_key.ToString()) << "' @ " << sequence << " : "
-     << static_cast<int>(type);
-  return ss.str();
-}
-
-std::string InternalKey::DebugString() const {
-  ParsedInternalKey parsed;
-  if (ParseInternalKey(rep_, &parsed)) {
-    return parsed.DebugString();
-  }
-  std::ostringstream ss;
-  ss << "(bad)" << EscapeString(rep_);
-  return ss.str();
-}
-
-int InternalKeyComparator::Compare(const InternalKey& a,
-                                   const InternalKey& b) const {
-  return Compare(a.Encode(), b.Encode());
-}
-
 int InternalKeyComparator::Compare(const Slice& akey, const Slice& bkey) const {
-  // Order by:
-  //    increasing user key (according to user-supplied comparator)
-  //    decreasing sequence number
-  //    decreasing type (though sequence# should be enough to disambiguate)
   int r = user_comparator_->Compare(ExtractUserKey(akey), ExtractUserKey(bkey));
   if (r == 0) {
     const uint64_t anum = DecodeFixed64(akey.data() + akey.size() - 8);
@@ -84,12 +54,7 @@ bool InternalFilterPolicy::KeyMayMatch(const Slice& key, const Slice& f) const {
 LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {
   size_t usize = user_key.size();
   size_t needed = usize + 13;  // A conservative estimate
-  char* dst;
-  if (needed <= sizeof(space_)) {
-    dst = space_;
-  } else {
-    dst = new char[needed];
-  }
+  char* dst = new char[needed];
   start_ = dst;
   dst = EncodeVarint32(dst, usize + 8);
   kstart_ = dst;

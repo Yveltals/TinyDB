@@ -75,7 +75,7 @@ int FindFile(const InternalKeyComparator& icmp,
   while (left < right) {
     uint32_t mid = (left + right) / 2;
     const FileMetaData* f = files[mid];
-    if (icmp.InternalKeyComparator::Compare(f->largest.Encode(), key) < 0) {
+    if (icmp.InternalKeyComparator::Compare(f->largest.Data(), key) < 0) {
       left = mid + 1;
     } else {
       right = mid;
@@ -86,12 +86,12 @@ int FindFile(const InternalKeyComparator& icmp,
 
 static bool AfterFile(const Comparator* ucmp, const Slice* user_key,
                       const FileMetaData* f) {
-  return (user_key && ucmp->Compare(*user_key, f->largest.user_key()) > 0);
+  return (user_key && ucmp->Compare(*user_key, f->largest.UserKey()) > 0);
 }
 
 static bool BeforeFile(const Comparator* ucmp, const Slice* user_key,
                        const FileMetaData* f) {
-  return (user_key && ucmp->Compare(*user_key, f->smallest.user_key()) < 0);
+  return (user_key && ucmp->Compare(*user_key, f->smallest.UserKey()) < 0);
 }
 
 bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
@@ -120,7 +120,7 @@ bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
     // Find the earliest possible internal key for smallest_user_key
     InternalKey small_key(*smallest_user_key, kMaxSequenceNumber,
                           kValueTypeForSeek);
-    index = FindFile(icmp, files, small_key.Encode());
+    index = FindFile(icmp, files, small_key.Data());
   }
   if (index >= files.size()) {
     // beginning of range is after all files, so no overlap.
@@ -162,7 +162,7 @@ class Version::LevelFileNumIterator : public Iterator {
   }
   Slice key() const override {
     assert(Valid());
-    return (*flist_)[index_]->largest.Encode();
+    return (*flist_)[index_]->largest.Data();
   }
   Slice value() const override {
     assert(Valid());
@@ -235,12 +235,12 @@ struct Saver {
 }  // namespace
 static void SaveValue(std::any arg, const Slice& ikey, const Slice& v) {
   Saver* s = std::any_cast<Saver*>(arg);
-  ParsedInternalKey parsed_key;
-  if (!ParseInternalKey(ikey, &parsed_key)) {
+  InternalKey key;
+  if (!key.DecodeFrom(ikey)) {
     s->state = kCorrupt;
   } else {
-    if (s->ucmp->Compare(parsed_key.user_key, s->user_key) == 0) {
-      s->state = (parsed_key.type == kTypeValue) ? kFound : kDeleted;
+    if (s->ucmp->Compare(key.UserKey(), s->user_key) == 0) {
+      s->state = (key.Type() == kTypeValue) ? kFound : kDeleted;
       if (s->state == kFound) {
         s->value->assign(v.data(), v.size());
       }
@@ -257,8 +257,8 @@ void Version::ForEachOverlapping(
   std::vector<FileMetaData*> tmp;
   tmp.reserve(files_[0].size());
   for (auto file : files_[0]) {
-    if (ucmp->Compare(user_key, file->smallest.user_key()) >= 0 &&
-        ucmp->Compare(user_key, file->largest.user_key()) <= 0) {
+    if (ucmp->Compare(user_key, file->smallest.UserKey()) >= 0 &&
+        ucmp->Compare(user_key, file->largest.UserKey()) <= 0) {
       tmp.push_back(file);
     }
   }
@@ -281,7 +281,7 @@ void Version::ForEachOverlapping(
     uint32_t index = FindFile(vset_->icmp_, files_[level], internal_key);
     if (index < num_files) {
       FileMetaData* f = files_[level][index];
-      if (ucmp->Compare(user_key, f->smallest.user_key()) < 0) {
+      if (ucmp->Compare(user_key, f->smallest.UserKey()) < 0) {
         // All of "f" is past any data for user_key
       } else {
         if (!func(std::any(arg), level, f)) {
@@ -426,13 +426,13 @@ void Version::GetOverlappingInputs(int level, const InternalKey* begin,
   assert(level < config::kNumLevels);
   inputs->clear();
   Slice user_begin, user_end;
-  if (begin) user_begin = begin->user_key();
-  if (end) user_end = end->user_key();
+  if (begin) user_begin = begin->UserKey();
+  if (end) user_end = end->UserKey();
   const Comparator* user_cmp = vset_->icmp_.user_comparator();
   for (size_t i = 0; i < files_[level].size();) {
     FileMetaData* f = files_[level][i++];
-    const Slice file_start = f->smallest.user_key();
-    const Slice file_limit = f->largest.user_key();
+    const Slice file_start = f->smallest.UserKey();
+    const Slice file_limit = f->largest.UserKey();
     if (begin && user_cmp->Compare(file_limit, user_begin) < 0) {
       // "f" is completely before specified range
     } else if (end && user_cmp->Compare(file_start, user_end) > 0) {
@@ -875,7 +875,7 @@ uint64_t VersionSet::ApproximateOffsetOf(Version* v, const InternalKey& ikey) {
         std::unique_ptr<Iterator> iter(table_cache_->NewIterator(
             ReadOptions(), file->number, file->file_size, &tableptr));
         if (tableptr) {
-          result += tableptr->ApproximateOffsetOf(ikey.Encode());
+          result += tableptr->ApproximateOffsetOf(ikey.Data());
         }
       }
     }
@@ -964,7 +964,7 @@ FileMetaData* FindSmallestBoundaryFile(
   FileMetaData* smallest_boundary_file = nullptr;
   for (auto f : level_files) {
     if (icmp.Compare(f->smallest, largest_key) > 0 &&
-        user_cmp->Compare(f->smallest.user_key(), largest_key.user_key()) ==
+        user_cmp->Compare(f->smallest.UserKey(), largest_key.UserKey()) ==
             0) {
       if (smallest_boundary_file == nullptr ||
           icmp.Compare(f->smallest, smallest_boundary_file->smallest) < 0) {

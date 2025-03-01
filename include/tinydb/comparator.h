@@ -12,10 +12,6 @@ class Comparator {
 
   virtual const char* Name() const = 0;
 
-  virtual void FindShortestSeparator(std::string* start,
-                                     const Slice& limit) const = 0;
-
-  virtual void FindShortSuccessor(std::string* key) const = 0;
 };
 
 }

@@ -58,7 +58,7 @@ void VersionEdit::EncodeTo(std::string* dst) const {
   for (size_t i = 0; i < compact_pointers_.size(); i++) {
     PutVarint32(dst, kCompactPointer);
     PutVarint32(dst, compact_pointers_[i].first);  // level
-    PutLengthPrefixedSlice(dst, compact_pointers_[i].second.Encode());
+    PutLengthPrefixedSlice(dst, compact_pointers_[i].second.Data());
   }
 
   for (const auto& deleted_file_kvp : deleted_files_) {
@@ -73,8 +73,8 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     PutVarint32(dst, new_files_[i].first);  // level
     PutVarint64(dst, f.number);
     PutVarint64(dst, f.file_size);
-    PutLengthPrefixedSlice(dst, f.smallest.Encode());
-    PutLengthPrefixedSlice(dst, f.largest.Encode());
+    PutLengthPrefixedSlice(dst, f.smallest.Data());
+    PutLengthPrefixedSlice(dst, f.largest.Data());
   }
 }
 
