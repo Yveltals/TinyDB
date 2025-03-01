@@ -23,9 +23,16 @@ class Version;
 class VersionSet;
 class WritableFile;
 
-// Return the smallest index i such that files[i]->largest >= key.
-// Return files.size() if there is no such file.
-// REQUIRES: "files" contains a sorted list of non-overlapping files.
+// Callback from TableCache::Get()
+enum GetState {
+  kNotFound,
+  kFound,
+  kDeleted,
+  kCorrupt,
+};
+
+// Return the smallest i that files[i]->largest >= key.
+// REQUIRES: "files" is a sorted list of non-overlapping files.
 int FindFile(const InternalKeyComparator& icmp,
              const std::vector<FileMetaData*>& files, const Slice& key);
 
@@ -43,32 +50,14 @@ bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
 
 class Version {
  public:
-  struct GetStats {
-    FileMetaData* seek_file;
-    int seek_file_level;
-  };
-
   // Append to *iters a sequence of iterators that will
   // yield the contents of this Version when merged together.
   // REQUIRES: This version has been saved (see VersionSet::SaveTo)
   void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters);
 
-  // Lookup the value for key.  If found, store it in *val and
-  // return OK.  Else return a non-OK status.  Fills *stats.
+  // Lookup the value for key.
   // REQUIRES: lock is not held
-  Status Get(const ReadOptions&, const LookupKey& key, std::string* val,
-             GetStats* stats);
-
-  // Adds "stats" into the current state.  Returns true if a new
-  // compaction may need to be triggered, false otherwise.
-  // REQUIRES: lock is held
-  bool UpdateStats(const GetStats& stats);
-
-  // Record a sample of bytes read at the specified internal key.
-  // Samples are taken approximately once every config::kReadBytesPeriod
-  // bytes.  Returns true if a new compaction may need to be triggered.
-  // REQUIRES: lock is held
-  bool RecordReadSample(Slice key); // TODO impl
+  Status Get(const ReadOptions&, const LookupKey& key, std::string* val);
 
   // Reference count management (so Versions do not disappear out from
   // under live iterators)
@@ -101,26 +90,20 @@ class Version {
  private:
   friend class Compaction;
   friend class VersionSet;
-
   class LevelFileNumIterator;
 
   explicit Version(VersionSet* vset)
       : vset_(vset), next_(this), prev_(this), refs_(0) {}
-
   Version(const Version&) = delete;
   Version& operator=(const Version&) = delete;
-
   ~Version();
 
   Iterator* NewConcatenatingIterator(const ReadOptions&, int level) const;
 
-  // Call func(arg, level, f) for every file that overlaps user_key in
-  // order from newest to oldest.  If an invocation of func returns
-  // false, makes no more calls.
-  //
-  // REQUIRES: user portion of internal_key == user_key.
-  void ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
-                          std::function<bool(std::any, int, FileMetaData*)>);
+  // Call func(arg, level, f) for every file that overlaps user_key.
+  // If an invocation of func returns false, makes no more calls.
+  void ForEachOverlapping(Slice internal_key,
+                          std::function<bool(FileMetaData*)>);
 
   VersionSet* vset_;  // VersionSet to which this Version belongs
   Version* next_;     // Next version in linked list
@@ -193,12 +176,6 @@ class VersionSet {
   // being compacted, or zero if there is no such log file.
   uint64_t PrevLogNumber() const { return prev_log_number_; }
 
-  // Pick level and inputs for a new compaction.
-  // Returns nullptr if there is no compaction to be done.
-  // Otherwise returns a pointer to a heap-allocated object that
-  // describes the compaction.  Caller should delete the result.
-  Compaction* PickCompaction();
-
   // Return the maximum overlapping data (in bytes) at next level for any
   // file at a level >= 1.
   int64_t MaxNextLevelOverlappingBytes();
@@ -206,11 +183,6 @@ class VersionSet {
   // Create an iterator that reads over the compaction inputs for "*c".
   // The caller should delete the iterator when no longer needed.
   Iterator* MakeInputIterator(Compaction* c);
-
-  // Returns true iff some level needs a compaction.
-  bool NeedsCompaction() const {
-    return false;
-  }
 
   // Add all files listed in any live version to *live.
   // May also mutate some internal state.

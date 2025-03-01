@@ -145,7 +145,7 @@ Iterator* Table::NewIterator(const ReadOptions& options) const {
 }
 
 Status Table::InternalGet(const ReadOptions& options, const Slice& key,
-                          std::any arg, HandleResult handler) {
+                          HandleResult handler) {
   Status s;
   Iterator* iiter = index_block_->NewIterator(options_.comparator);
   // Seek the block containing the key
@@ -162,7 +162,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& key,
           BlockReader(std::any(this), options, iiter->value()));
       block_iter->Seek(key);
       if (block_iter->Valid()) {
-        handler(arg, block_iter->key(), block_iter->value());
+        handler(block_iter->key(), block_iter->value());
       }
       s = block_iter->status();
     }

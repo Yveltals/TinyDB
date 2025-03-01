@@ -10,7 +10,8 @@
 
 namespace tinydb {
 
-using HandleResult = std::function<void(std::any, const Slice&, const Slice&)>;
+// Input: internal_key, value
+using HandleResult = std::function<void(const Slice&, const Slice&)>;
 
 class Table {
  public:
@@ -41,7 +42,7 @@ class Table {
 
   static Iterator* BlockReader(std::any, const ReadOptions&, const Slice&);
 
-  Status InternalGet(const ReadOptions&, const Slice& key, std::any arg,
+  Status InternalGet(const ReadOptions&, const Slice& key,
                      HandleResult handler);
   
   void ReadFilter(const Footer& footer);

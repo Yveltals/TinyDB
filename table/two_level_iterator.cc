@@ -13,6 +13,7 @@ TwoLevelIterator::TwoLevelIterator(Iterator* index_iter,
 
 void TwoLevelIterator::Seek(const Slice& target) {
   index_iter_.Seek(target);
+  // index_iter.value(): block data offset and size
   InitDataBlock();
   if (data_iter_.iter()) data_iter_.Seek(target);
   SkipEmptyDataBlocksForward();
@@ -48,7 +49,7 @@ void TwoLevelIterator::SkipEmptyDataBlocksForward() {
   while (!data_iter_.iter() || !data_iter_.Valid()) {
     // Move to next block
     if (!index_iter_.Valid()) {
-      SetDataIterator(nullptr);
+      data_iter_.Set(nullptr);
       return;
     }
     index_iter_.Next();
@@ -61,7 +62,7 @@ void TwoLevelIterator::SkipEmptyDataBlocksBackward() {
   while (!data_iter_.iter() || !data_iter_.Valid()) {
     // Move to next block
     if (!index_iter_.Valid()) {
-      SetDataIterator(nullptr);
+      data_iter_.Set(nullptr);
       return;
     }
     index_iter_.Prev();
@@ -70,25 +71,14 @@ void TwoLevelIterator::SkipEmptyDataBlocksBackward() {
   }
 }
 
-void TwoLevelIterator::SetDataIterator(Iterator* data_iter) {
-  if (data_iter_.iter()) SaveError(data_iter_.status());
-  data_iter_.Set(data_iter);
-}
-
 void TwoLevelIterator::InitDataBlock() {
   if (!index_iter_.Valid()) {
-    SetDataIterator(nullptr);
+    data_iter_.Set(nullptr);
     return;
   }
   Slice handle_value = index_iter_.value();
-  if (data_iter_.iter() && handle_value.compare(data_block_handle_) == 0) {
-    // data_iter_ is already constructed with this iterator, so
-    // no need to change anything
-  } else {
-    Iterator* iter = block_function_(arg_, options_, handle_value);
-    data_block_handle_.assign(handle_value.data(), handle_value.size());
-    SetDataIterator(iter);
-  }
+  Iterator* iter = block_function_(arg_, options_, handle_value);
+  data_iter_.Set(iter);
 }
 
 Iterator* NewTwoLevelIterator(Iterator* index_iter,

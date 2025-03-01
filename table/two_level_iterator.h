@@ -50,7 +50,6 @@ class TwoLevelIterator : public Iterator {
   }
   void SkipEmptyDataBlocksForward();
   void SkipEmptyDataBlocksBackward();
-  void SetDataIterator(Iterator* data_iter);
   void InitDataBlock();
 
   BlockFunction block_function_;
@@ -59,9 +58,6 @@ class TwoLevelIterator : public Iterator {
   Status status_;
   IteratorWrapper index_iter_;
   IteratorWrapper data_iter_;  // May be nullptr
-  // If data_iter_ is non-null, then "data_block_handle_" holds the
-  // "index_value" passed to block_function_ to create the data_iter_.
-  std::string data_block_handle_;
 };
 
 Iterator* NewTwoLevelIterator(Iterator* index_iter, BlockFunction func,

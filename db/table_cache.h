@@ -24,12 +24,13 @@ class TableCache {
                         uint64_t file_size, Table** tableptr = nullptr);
 
   Status Get(const ReadOptions& options, uint64_t file_number,
-             uint64_t file_size, const Slice& k, std::any arg,
-             HandleResult handler);
+             uint64_t file_size, const Slice& k, HandleResult handler);
 
   void Evict(uint64_t file_number);
 
  private:
+  // Find table by file number from cache.
+  // If not existed, open SSTable and insert to cache
   Status FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle**);
 
   Env* const env_;

@@ -129,16 +129,13 @@ bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
   return !BeforeFile(ucmp, largest_user_key, files[index]);
 }
 
-// An internal iterator.  For a given version/level pair, yields
-// information about the files in the level.  For a given entry, key()
-// is the largest key that occurs in the file, and value() is an
-// 16-byte value containing the file number and file size, both
-// encoded using EncodeFixed64.
+// Seek where the key is, in the specified layer files.
+// value() is an 16-byte value containing the file number and file size
 class Version::LevelFileNumIterator : public Iterator {
  public:
   LevelFileNumIterator(const InternalKeyComparator& icmp,
                        const std::vector<FileMetaData*>* flist)
-      : icmp_(icmp), flist_(flist), index_(flist->size()) {  // Marks as invalid
+      : icmp_(icmp), flist_(flist), index_(flist->size()) { // Marks as invalid
   }
   bool Valid() const override { return index_ < flist_->size(); }
   void Seek(const Slice& target) override {
@@ -176,11 +173,12 @@ class Version::LevelFileNumIterator : public Iterator {
   const InternalKeyComparator icmp_;
   const std::vector<FileMetaData*>* const flist_;
   uint32_t index_;
-
-  // Backing store for value().  Holds the file number and size.
+  // Holds the file number and size.
   mutable char value_buf_[16];
 };
 
+// Function to build data_block iterator
+// Return Table::Iterator
 static Iterator* GetFileIterator(std::any arg, const ReadOptions& options,
                                  const Slice& file_value) {
   auto cache =std::any_cast<TableCache*>(arg);
@@ -218,40 +216,9 @@ void Version::AddIterators(const ReadOptions& options,
   }
 }
 
-// Callback from TableCache::Get()
-namespace {
-enum SaverState {
-  kNotFound,
-  kFound,
-  kDeleted,
-  kCorrupt,
-};
-struct Saver {
-  SaverState state;
-  const Comparator* ucmp;
-  Slice user_key;
-  std::string* value;
-};
-}  // namespace
-static void SaveValue(std::any arg, const Slice& ikey, const Slice& v) {
-  Saver* s = std::any_cast<Saver*>(arg);
-  InternalKey key;
-  if (!key.DecodeFrom(ikey)) {
-    s->state = kCorrupt;
-  } else {
-    if (s->ucmp->Compare(key.UserKey(), s->user_key) == 0) {
-      s->state = (key.Type() == kTypeValue) ? kFound : kDeleted;
-      if (s->state == kFound) {
-        s->value->assign(v.data(), v.size());
-      }
-    }
-  }
-}
-
 void Version::ForEachOverlapping(
-    Slice user_key, Slice internal_key, void* arg,
-    std::function<bool(std::any, int, FileMetaData*)> func) {
-
+    Slice internal_key, std::function<bool(FileMetaData*)> func) {
+  Slice user_key = ExtractUserKey(internal_key);
   const Comparator* ucmp = vset_->icmp_.user_comparator();
   // Search level-0 in order from newest to oldest.
   std::vector<FileMetaData*> tmp;
@@ -266,8 +233,8 @@ void Version::ForEachOverlapping(
     std::sort(tmp.begin(), tmp.end(), [](FileMetaData* a, FileMetaData* b) {
       return a->number > b->number;
     });
-    for (auto f : tmp) {
-      if (!func(std::any(arg), 0, f)) {
+    for (auto file : tmp) {
+      if (!func(file)) {
         return;
       }
     }
@@ -280,11 +247,11 @@ void Version::ForEachOverlapping(
     // Binary search to find earliest index whose largest key >= internal_key.
     uint32_t index = FindFile(vset_->icmp_, files_[level], internal_key);
     if (index < num_files) {
-      FileMetaData* f = files_[level][index];
-      if (ucmp->Compare(user_key, f->smallest.UserKey()) < 0) {
+      FileMetaData* file = files_[level][index];
+      if (ucmp->Compare(user_key, file->smallest.UserKey()) < 0) {
         // All of "f" is past any data for user_key
       } else {
-        if (!func(std::any(arg), level, f)) {
+        if (!func(file)) {
           return;
         }
       }
@@ -292,88 +259,56 @@ void Version::ForEachOverlapping(
   }
 }
 
-Status Version::Get(const ReadOptions& options, const LookupKey& k,
-                    std::string* value, GetStats* stats) {
-  stats->seek_file = nullptr;
-  stats->seek_file_level = -1;
+Status Version::Get(const ReadOptions& options, const LookupKey& key,
+                    std::string* value) {
+  Status s;
+  auto ucmp = vset_->icmp_.user_comparator();
+  auto state = kNotFound;
+  auto found = false;
+  auto ikey = key.internal_key();
+  auto user_key = key.user_key();
 
-  struct State {
-    Saver saver;
-    GetStats* stats;
-    const ReadOptions* options;
-    Slice ikey;
-    FileMetaData* last_file_read;
-    int last_file_read_level;
-
-    VersionSet* vset;
-    Status s;
-    bool found;
-
-    static bool Match(std::any arg, int level, FileMetaData* f) {
-      State* state = std::any_cast<State*>(arg);
-
-      if (!state->stats->seek_file && state->last_file_read) {
-        // We have had more than one seek for this read.  Charge the 1st file.
-        state->stats->seek_file = state->last_file_read;
-        state->stats->seek_file_level = state->last_file_read_level;
+  // Seek key in SSTables
+  auto match = [&](FileMetaData* file) {
+    // Save value to *value
+    auto save_value = [&state, ucmp, user_key, value](const Slice& ikey,
+                                                      const Slice& v) {
+      InternalKey key;
+      if (!key.DecodeFrom(ikey)) {
+        state = kCorrupt;
+        return;
       }
+      if (ucmp->Compare(key.UserKey(), user_key) == 0) {
+        state = (key.Type() == kTypeValue) ? kFound : kDeleted;
+        if (state == kFound) {
+          value->assign(v.data(), v.size());
+        }
+      }
+    };
 
-      state->last_file_read = f;
-      state->last_file_read_level = level;
-      state->s = state->vset->table_cache_->Get(*state->options, f->number,
-                                                f->file_size, state->ikey,
-                                                &state->saver, SaveValue);
-      if (!state->s.ok()) {
-        state->found = true;
-        return false;
-      }
-      switch (state->saver.state) {
-        case kNotFound:
-          return true;  // Keep searching in other files
-        case kFound:
-          state->found = true;
-          return false;
-        case kDeleted:
-          return false;
-        case kCorrupt:
-          state->s =
-              Status::Corruption("corrupted key for ", state->saver.user_key);
-          state->found = true;
-          return false;
-      }
-      // Not reached. Added to avoid false compilation warnings of
-      // "control reaches end of non-void function".
+    s = vset_->table_cache_->Get(options, file->number, file->file_size, ikey,
+                                 save_value);
+    if (!s.ok()) {
+      found = true;
       return false;
     }
+    switch (state) {
+      case kNotFound:
+        return true;  // Keep searching in other files
+      case kFound:
+        found = true;
+        return false;
+      case kDeleted:
+        return false;
+      case kCorrupt:
+        s = Status::Corruption("corrupted key for ", user_key);
+        found = true;
+        return false;
+    }
+    return false;
   };
-
-  State state;
-  state.found = false;
-  state.stats = stats;
-  state.last_file_read = nullptr;
-  state.last_file_read_level = -1;
-
-  state.options = &options;
-  state.ikey = k.internal_key();
-  state.vset = vset_;
-
-  state.saver.state = kNotFound;
-  state.saver.ucmp = vset_->icmp_.user_comparator();
-  state.saver.user_key = k.user_key();
-  state.saver.value = value;
-
-  ForEachOverlapping(state.saver.user_key, state.ikey, &state, &State::Match);
-
-  return state.found ? state.s : Status::NotFound(Slice());
-}
-
-bool Version::UpdateStats(const GetStats& stats) {
-  FileMetaData* f = stats.seek_file;
-  if (f) {
-    f->allowed_seeks--;
-    return true;
-  }
-  return false;
+  ForEachOverlapping(ikey, match);
+  return found ? s : Status::NotFound(Slice());
 }
 
 void Version::Ref() { ++refs_; }
@@ -544,9 +479,6 @@ class VersionSet::Builder {
     for (auto& [level, file_meta] : edit->new_files_) {
       FileMetaData* f = new FileMetaData(file_meta);
       f->refs = 1;
-      f->allowed_seeks = static_cast<int>((f->file_size / 16384U));
-      if (f->allowed_seeks < 100) f->allowed_seeks = 100;
-
       levels_[level].deleted_files.erase(f->number);
       levels_[level].added_files->insert(f);
     }

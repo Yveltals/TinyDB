@@ -32,14 +32,10 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
     std::string fname = SSTTableFileName(dbname_, file_number);
     Table* table = nullptr;
     auto file = env_->NewRandomAccessFile(fname);
-    if (s.ok()) {
-      s = Table::Open(options_, file, file_size, &table);
-    }
+    s = Table::Open(options_, file, file_size, &table);
     if (!s.ok()) {
       assert(table == nullptr);
       delete file;
-      // We do not cache error results so that if the error is transient,
-      // or somebody repairs the file, we recover automatically.
     } else {
       TableAndFile tf{file, table};
       *handle = cache_->Insert(key, tf, 1, &DeleteEntry);
@@ -71,13 +67,13 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
 }
 
 Status TableCache::Get(const ReadOptions& options, uint64_t file_number,
-                       uint64_t file_size, const Slice& k, std::any arg,
+                       uint64_t file_size, const Slice& key,
                        HandleResult handler) {
   Cache::Handle* handle = nullptr;
   auto s = FindTable(file_number, file_size, &handle);
   if (s.ok()) {
     auto t = std::any_cast<TableAndFile>(cache_->Value(handle)).table;
-    s = t->InternalGet(options, k, arg, handler);
+    s = t->InternalGet(options, key, handler);
     cache_->Release(handle);
   }
   return s;
