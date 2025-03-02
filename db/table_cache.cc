@@ -1,9 +1,10 @@
 #include "db/table_cache.h"
-#include "db/filename.h"
 #include "util/coding.h"
+#include "util/filename.h"
 
 namespace tinydb {
 
+// Handle in table cache
 struct TableAndFile {
   RandomAccessFile* file;
   Table* table;
@@ -21,8 +22,8 @@ static void UnrefEntry(std::any arg1, std::any arg2) {
   cache->Release(h);
 }
 
-Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
-                             Cache::Handle** handle) {
+Status TableCache::FindOrOpenTable(uint64_t file_number, uint64_t file_size,
+                                   Cache::Handle** handle) {
   Status s;
   char buf[sizeof(file_number)];
   EncodeFixed64(buf, file_number);
@@ -44,20 +45,20 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
   return s;
 }
 
-Iterator* TableCache::NewIterator(const ReadOptions& options,
-                                  uint64_t file_number, uint64_t file_size,
-                                  Table** tableptr) {
+std::unique_ptr<Iterator> TableCache::NewIterator(const ReadOptions& options,
+                                                  uint64_t file_number,
+                                                  uint64_t file_size,
+                                                  Table** tableptr) {
   if (tableptr != nullptr) {
     *tableptr = nullptr;
   }
-
   Cache::Handle* handle = nullptr;
-  auto s = FindTable(file_number, file_size, &handle);
+  auto s = FindOrOpenTable(file_number, file_size, &handle);
   if (!s.ok()) {
     return NewErrorIterator(s);
   }
-
-  auto table = std::any_cast<TableAndFile>(cache_->Value(handle)).table;
+  auto table_file = std::any_cast<TableAndFile>(cache_->Value(handle));
+  auto table = table_file.table;
   auto result = table->NewIterator(options);
   result->RegisterCleanup(&UnrefEntry, cache_, handle);
   if (tableptr != nullptr) {
@@ -70,7 +71,7 @@ Status TableCache::Get(const ReadOptions& options, uint64_t file_number,
                        uint64_t file_size, const Slice& key,
                        HandleResult handler) {
   Cache::Handle* handle = nullptr;
-  auto s = FindTable(file_number, file_size, &handle);
+  auto s = FindOrOpenTable(file_number, file_size, &handle);
   if (s.ok()) {
     auto t = std::any_cast<TableAndFile>(cache_->Value(handle)).table;
     s = t->InternalGet(options, key, handler);

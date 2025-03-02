@@ -13,7 +13,7 @@ Iterator::~Iterator() {
 
 void Iterator::RegisterCleanup(CleanupFun func, std::any arg1, std::any arg2) {
   assert(func);
-  cleanup_list_.emplace_back(func, arg1, arg2); // TODO should move()?
+  cleanup_list_.emplace_back(func, arg1, arg2);
 }
 
 namespace {
@@ -29,14 +29,8 @@ class EmptyIterator : public Iterator {
   void SeekToLast() override {}
   void Next() override { assert(false); }
   void Prev() override { assert(false); }
-  Slice key() const override {
-    assert(false);
-    return Slice();
-  }
-  Slice value() const override {
-    assert(false);
-    return Slice();
-  }
+  Slice key() const override { return Slice(); }
+  Slice value() const override { return Slice(); }
   Status status() const override { return status_; }
 
  private:
@@ -45,10 +39,11 @@ class EmptyIterator : public Iterator {
 
 }  // anonymous namespace
 
-Iterator* NewEmptyIterator() { return new EmptyIterator(Status::OK()); }
-
-Iterator* NewErrorIterator(const Status& status) {
-  return new EmptyIterator(status);
+std::unique_ptr<Iterator> NewEmptyIterator() {
+  return std::make_unique<EmptyIterator>(Status::OK()); 
+}
+std::unique_ptr<Iterator> NewErrorIterator(const Status& status) {
+  return std::make_unique<EmptyIterator>(status);
 }
 
 }  // namespace tinydb

@@ -14,6 +14,7 @@ class BlockBuilder {
   BlockBuilder& operator=(const BlockBuilder&) = delete;
 
   void Reset();
+
   // REQUIRES: key is larget than any previously added key
   void Add(const Slice& key, const Slice& value);
 

@@ -7,12 +7,15 @@
 namespace tinydb {
 namespace log {
 
-int kHeaderSize = 2;
+extern const int kHeaderSize;
 
 class Reader {
  public:
-  Reader(SequentialFile* file)
-      : file_(file), backing_store_(new char[4096]), buffer_(), eof_(false) {}
+  Reader(std::unique_ptr<SequentialFile> file)
+      : file_(std::move(file)),
+        backing_store_(new char[4096]),
+        buffer_(),
+        eof_(false) {}
   Reader(const Reader&) = delete;
   Reader& operator=(const Reader&) = delete;
   ~Reader() { delete[] backing_store_; }
@@ -20,7 +23,7 @@ class Reader {
   bool ReadRecord(Slice* record);
 
  private:
-  SequentialFile* const file_;
+  std::unique_ptr<SequentialFile> file_;
   char* const backing_store_;
   Slice buffer_;
   bool eof_; // XXX

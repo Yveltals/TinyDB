@@ -5,8 +5,8 @@
 #include "table/filter_block.h"
 #include "table/format.h"
 #include "common/iterator.h"
-#include "util/file.h"
 #include "common/options.h"
+#include "util/file.h"
 
 namespace tinydb {
 
@@ -25,7 +25,7 @@ class Table {
     delete index_block_;
   }
 
-  Iterator* NewIterator(const ReadOptions&) const;
+  std::unique_ptr<Iterator> NewIterator(const ReadOptions&) const;
   uint64_t ApproximateOffsetOf(const Slice& key) const;
 
  private:
@@ -40,7 +40,9 @@ class Table {
         filter_data_(nullptr),
         index_block_(index_block) {}
 
-  static Iterator* BlockReader(std::any, const ReadOptions&, const Slice&);
+  static std::unique_ptr<Iterator> BlockReader(const Table* table,
+                                               const ReadOptions&,
+                                               const Slice&);
 
   Status InternalGet(const ReadOptions&, const Slice& key,
                      HandleResult handler);

@@ -1,9 +1,9 @@
 #include "table/format.h"
 #include <memory>
-#include "table/block.h"
-#include "util/file.h"
 #include "common/options.h"
+#include "table/block.h"
 #include "util/coding.h"
+#include "util/file.h"
 
 namespace tinydb {
 
@@ -37,7 +37,6 @@ Status Footer::DecodeFrom(Slice* input) {
   if (result.ok()) {
     result = index_handle_.DecodeFrom(input);
   }
-  // TODO: Should skip over any leftover data (just padding for now) in "input" ?
   return result;
 }
 
@@ -47,8 +46,6 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   result->cachable = false;
   result->heap_allocated = false;
 
-  // Read the block contents as well as the type/crc footer.  TODO
-  // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
   std::unique_ptr<char[]> buf(new char[n]);
   Slice contents;

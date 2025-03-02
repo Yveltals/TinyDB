@@ -1,9 +1,9 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
-#include "table/format.h"
-#include "common/iterator.h"
 #include "common/comparator.h"
+#include "common/iterator.h"
+#include "table/format.h"
 
 namespace tinydb {
 
@@ -26,7 +26,7 @@ class Block {
   }
 
   size_t size() const { return size_; }
-  Iterator* NewIterator(const Comparator* comparator);
+  std::unique_ptr<Iterator> NewIterator(const Comparator* comparator);
 
  private:
   class Iter;

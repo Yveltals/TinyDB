@@ -7,12 +7,3 @@ SpacesBeforeTrailingComments: 1
 NamespaceIndentation: None
 IndentFunctionDeclarationAfterType: true
 DerivePointerAlignment: false
-
-HeaderFilterRegex: ''
-SortIncludes: true
-IncludeBlocks: Preserve
-IncludeCategories:
-  - Regex: '^<.*>'
-    Priority: 1
-  - Regex: '^".*"$'
-    Priority: 2

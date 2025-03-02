@@ -26,7 +26,7 @@ class DB {
   virtual Status Write(const WriteOptions& options, WriteBatch* updates) = 0;
   virtual Status Get(const ReadOptions& options, const Slice& key,
                      std::string* value) = 0;
-  virtual Iterator* NewIterator(const ReadOptions& options) = 0;
+  virtual std::unique_ptr<Iterator> NewIterator(const ReadOptions& options) = 0;
   virtual bool GetProperty(const Slice& property, std::string* value) = 0;
   virtual void GetApproximateSizes(const Slice& start, const Slice& limit,
                                    int n, uint64_t* sizes) = 0;

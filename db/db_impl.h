@@ -4,11 +4,11 @@
 #include <mutex>
 #include <set>
 #include <string>
+#include "db/db.h"
 #include "db/dbformat.h"
-#include "db/log_writer.h"
 #include "db/memtable.h"
 #include "db/table_cache.h"
-#include "db/db.h"
+#include "log/log_writer.h"
 #include "util/file.h"
 
 namespace tinydb {
@@ -27,7 +27,7 @@ class DBImpl : public DB {
   Status Write(const WriteOptions& options, WriteBatch* updates) override;
   Status Get(const ReadOptions& options, const Slice& key,
              std::string* value) override;
-  Iterator* NewIterator(const ReadOptions&) override;
+  std::unique_ptr<Iterator> NewIterator(const ReadOptions&) override;
   bool GetProperty(const Slice& property, std::string* value) override;
   void GetApproximateSizes(const Slice& start, const Slice& limit, int n,
                            uint64_t* sizes) override;
@@ -56,9 +56,9 @@ class DBImpl : public DB {
     int64_t bytes_written;
   };
 
-  Iterator* NewInternalIterator(const ReadOptions&,
-                                SequenceNumber* latest_snapshot,
-                                uint32_t* seed);
+  std::unique_ptr<Iterator> NewInternalIterator(const ReadOptions&,
+                                                SequenceNumber* latest_snapshot,
+                                                uint32_t* seed);
 
   Status NewDB();
 

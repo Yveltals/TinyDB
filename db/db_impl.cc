@@ -10,18 +10,17 @@
 #include <vector>
 #include "db/db.h"
 #include "db/dbformat.h"
-#include "db/log_reader.h"
-#include "db/log_writer.h"
+#include "log/log_reader.h"
+#include "log/log_writer.h"
 #include "db/memtable.h"
 #include "db/table_cache.h"
-#include "db/write_batch_internal.h"
 #include "table/block.h"
 #include "table/table.h"
 #include "table/table_builder.h"
 #include "util/cache.h"
 #include "util/coding.h"
 #include "util/file.h"
-#include "util/logging.h"
+#include "log/logging.h"
 
 namespace tinydb {
 

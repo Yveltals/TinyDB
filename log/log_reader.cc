@@ -1,10 +1,12 @@
-#include "db/log_reader.h"
+#include "log/log_reader.h"
 #include <cstdio>
 #include <iostream>
 #include "util/file.h"
 
 namespace tinydb {
 namespace log {
+
+const int kHeaderSize = 2;
 
 bool Reader::ReadRecord(Slice* record) {
   record->clear();

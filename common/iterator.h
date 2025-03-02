@@ -1,6 +1,7 @@
 #pragma once
 #include <any>
 #include <list>
+#include <memory>
 #include "common/slice.h"
 #include "common/status.h"
 
@@ -37,7 +38,7 @@ class Iterator {
   std::list<CleanupNode> cleanup_list_;
 };
 
-Iterator* NewEmptyIterator();
-Iterator* NewErrorIterator(const Status& status);
+std::unique_ptr<Iterator> NewEmptyIterator();
+std::unique_ptr<Iterator> NewErrorIterator(const Status& status);
 
 } // namespace tinydb

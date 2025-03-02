@@ -1,6 +1,6 @@
 // #include "gtest/gtest.h"
-#include "db/log_reader.h"
-#include "db/log_writer.h"
+#include "log/log_reader.h"
+#include "log/log_writer.h"
 #include "util/file.h"
 #include "util/coding.h"
 

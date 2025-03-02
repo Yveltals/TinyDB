@@ -1,9 +1,9 @@
-#include "db/filename.h"
+#include "util/filename.h"
 #include <cassert>
 #include <cstdio>
 #include "db/dbformat.h"
 #include "util/file.h"
-#include "util/logging.h"
+#include "log/logging.h"
 
 namespace tinydb {
 

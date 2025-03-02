@@ -7,19 +7,19 @@
 namespace tinydb {
 namespace log {
 
-extern int kHeaderSize;
-
 class Writer {
  public:
-  explicit Writer(WritableFile* dest) : dest_(dest) {}
+  explicit Writer(std::unique_ptr<WritableFile> dest)
+      : dest_(std::move(dest)) {}
   Writer(const Writer&) = delete;
   Writer& operator=(const Writer&) = delete;
   ~Writer() = default;
 
   Status AddRecord(const Slice& slice);
+  Status Sync() { return dest_->Sync(); }
 
  private:
-  WritableFile* dest_;
+  std::unique_ptr<WritableFile> dest_;
 };
 
 } // namespace log

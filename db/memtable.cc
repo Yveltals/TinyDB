@@ -57,7 +57,9 @@ class MemTableIterator : public Iterator {
   std::string tmp_;
 };
 
-Iterator* MemTable::NewIterator() { return new MemTableIterator(&table_); }
+std::unique_ptr<Iterator> MemTable::NewIterator() {
+  return std::make_unique<MemTableIterator>(&table_);
+}
 
 void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
                    const Slice& value) {

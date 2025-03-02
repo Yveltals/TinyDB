@@ -20,8 +20,10 @@ class TableCache {
   TableCache& operator=(const TableCache&) = delete;
   ~TableCache() { delete cache_; }
 
-  Iterator* NewIterator(const ReadOptions& options, uint64_t file_number,
-                        uint64_t file_size, Table** tableptr = nullptr);
+  std::unique_ptr<Iterator> NewIterator(const ReadOptions& options,
+                                        uint64_t file_number,
+                                        uint64_t file_size,
+                                        Table** tableptr = nullptr);
 
   Status Get(const ReadOptions& options, uint64_t file_number,
              uint64_t file_size, const Slice& k, HandleResult handler);
@@ -31,7 +33,8 @@ class TableCache {
  private:
   // Find table by file number from cache.
   // If not existed, open SSTable and insert to cache
-  Status FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle**);
+  Status FindOrOpenTable(uint64_t file_number, uint64_t file_size,
+                         Cache::Handle**);
 
   File* const env_;
   const std::string dbname_;

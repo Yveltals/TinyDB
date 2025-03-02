@@ -1,31 +1,19 @@
 cmake_minimum_required(VERSION 3.9)
 project(tinydb VERSION 1.0.0 LANGUAGES C CXX)
 
-# C++ standard can be overridden when this is used as a sub-project.
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
   set(CMAKE_CXX_EXTENSIONS OFF)
 endif(NOT CMAKE_CXX_STANDARD)
 
-set(TINYDB_PLATFORM_NAME TINYDB_PLATFORM_POSIX)
-
-include(CheckIncludeFile)
-check_include_file("unistd.h" HAVE_UNISTD_H)
-
 include(CheckLibraryExists)
-check_library_exists(crc32c crc32c_value "" HAVE_CRC32C)
-check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
-check_library_exists(zstd zstd_compress "" HAVE_ZSTD)
 check_library_exists(tcmalloc malloc "" HAVE_TCMALLOC)
-
-include(CheckCXXSymbolExists)
-check_cxx_symbol_exists(fdatasync "unistd.h" HAVE_FDATASYNC)
-check_cxx_symbol_exists(F_FULLFSYNC "fcntl.h" HAVE_FULLFSYNC)
-check_cxx_symbol_exists(O_CLOEXEC "fcntl.h" HAVE_O_CLOEXEC)
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-Wthread-safety HAVE_CLANG_THREAD_SAFETY)
+
+include(GNUInstallDirs)
 
 include_directories(
   "${PROJECT_BINARY_DIR}/include"
@@ -33,9 +21,9 @@ include_directories(
 )
 
 
-# Must be included before CMAKE_INSTALL_INCLUDEDIR is used.
-include(GNUInstallDirs)
-
+############################################################
+#                         TinyDB
+############################################################
 add_library(tinydb "")
 target_sources(tinydb
   PRIVATE
@@ -52,12 +40,12 @@ target_sources(tinydb
     "db/db_impl.cc"
     "db/dbformat.h"
     "db/dbformat.cc"
-    "db/filename.h"
-    "db/filename.cc"
-    "db/log_reader.h"
-    "db/log_reader.cc"
-    "db/log_writer.h"
-    "db/log_writer.cc"
+    "util/filename.h"
+    "util/filename.cc"
+    "log/log_reader.h"
+    "log/log_reader.cc"
+    "log/log_writer.h"
+    "log/log_writer.cc"
     "db/memtable.h"
     "db/memtable.cc"
     "db/skiplist.h"
@@ -69,7 +57,6 @@ target_sources(tinydb
     "db/version_set.cc"
     "db/write_batch.h"
     "db/write_batch.cc"
-    "db/write_batch_internal.h"
     "table/block_builder.h"
     "table/block_builder.cc"
     "table/block.h"
@@ -78,7 +65,6 @@ target_sources(tinydb
     "table/filter_block.cc"
     "table/format.h"
     "table/format.cc"
-    "table/iterator_wrapper.h"
     "table/table.h"
     "table/table.cc"
     "table/table_builder.h"
@@ -96,10 +82,9 @@ target_sources(tinydb
     "util/file.cc"
     "util/hash.h"
     "util/hash.cc"
-    "util/logging.h"
-    "util/logging.cc"
+    "log/logging.h"
+    "log/logging.cc"
 )
-
 
 target_include_directories(tinydb
   PUBLIC
@@ -110,17 +95,20 @@ target_include_directories(tinydb
 set_target_properties(tinydb
   PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
 
-if(HAVE_SNAPPY)
-  target_link_libraries(tinydb snappy)
-endif(HAVE_SNAPPY)
-if(HAVE_ZSTD)
-  target_link_libraries(tinydb zstd)
-endif(HAVE_ZSTD)
+if(HAVE_CLANG_THREAD_SAFETY)
+  target_compile_options(tinydb
+    PUBLIC
+      -Werror -Wthread-safety)
+endif(HAVE_CLANG_THREAD_SAFETY)
+
 if(HAVE_TCMALLOC)
   target_link_libraries(tinydb tcmalloc)
 endif(HAVE_TCMALLOC)
 
 
+############################################################
+#                         Gtest
+############################################################
 option(TINYDB_BUILD_TESTS "Build unit tests" OFF)
 
 if(TINYDB_BUILD_TESTS)
@@ -149,11 +137,6 @@ if(TINYDB_BUILD_TESTS)
       "db/log_test.cc"
   )
   target_link_libraries(tinydb_tests tinydb gmock gtest gtest_main)
-  target_compile_definitions(tinydb_tests
-    PRIVATE
-      ${TINYDB_PLATFORM_NAME}=1
-  )
-
   add_test(NAME "tinydb_tests" COMMAND "tinydb_tests")
 
 endif(TINYDB_BUILD_TESTS)

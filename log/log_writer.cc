@@ -1,5 +1,6 @@
-#include "db/log_writer.h"
+#include "log/log_writer.h"
 #include <cstdint>
+#include "log/log_reader.h"
 #include "util/file.h"
 #include "util/coding.h"
 

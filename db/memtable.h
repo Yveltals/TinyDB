@@ -28,7 +28,7 @@ class MemTable {
   }
 
   size_t ApproximateMemoryUsage() { return arena_.MemoryUsage(); }
-  Iterator* NewIterator();
+  std::unique_ptr<Iterator> NewIterator();
   void Add(SequenceNumber seq, ValueType type, const Slice& key,
            const Slice& value);
   // If contains value, store it in *value ans return true

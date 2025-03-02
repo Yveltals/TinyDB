@@ -2,20 +2,20 @@
 
 #include "table/format.h"
 #include "table/block.h"
-#include "table/iterator_wrapper.h"
 #include "common/iterator.h"
 #include "common/options.h"
 #include "table/table.h"
 
 namespace tinydb {
 
-using BlockFunction = std::function<Iterator*(
-    std::any arg, const ReadOptions& options, const Slice&)>;
+// Build iterator of block entries
+using BuildIterator = std::function<std::unique_ptr<Iterator>(
+    const ReadOptions& options, const Slice&)>;
 
 class TwoLevelIterator : public Iterator {
  public:
-  TwoLevelIterator(Iterator* index_iter, BlockFunction block_function,
-                   std::any arg, const ReadOptions& options);
+  TwoLevelIterator(std::unique_ptr<Iterator> index_iter,
+                   BuildIterator builder, const ReadOptions& options);
 
   ~TwoLevelIterator() override;
 
@@ -25,20 +25,20 @@ class TwoLevelIterator : public Iterator {
   void Next() override;
   void Prev() override;
 
-  bool Valid() const override { return data_iter_.Valid(); }
+  bool Valid() const override { return data_iter_->Valid(); }
   Slice key() const override {
     assert(Valid());
-    return data_iter_.key();
+    return data_iter_->key();
   }
   Slice value() const override {
     assert(Valid());
-    return data_iter_.value();
+    return data_iter_->value();
   }
   Status status() const override {
-    if (!index_iter_.status().ok()) {
-      return index_iter_.status();
-    } else if (data_iter_.iter() && !data_iter_.status().ok()) {
-      return data_iter_.status();
+    if (!index_iter_->status().ok()) {
+      return index_iter_->status();
+    } else if (data_iter_ && !data_iter_->status().ok()) {
+      return data_iter_->status();
     } else {
       return status_;
     }
@@ -52,15 +52,15 @@ class TwoLevelIterator : public Iterator {
   void SkipEmptyDataBlocksBackward();
   void InitDataBlock();
 
-  BlockFunction block_function_;
-  std::any arg_;
+  BuildIterator builder_;
   const ReadOptions options_;
   Status status_;
-  IteratorWrapper index_iter_;
-  IteratorWrapper data_iter_;  // May be nullptr
+  std::unique_ptr<Iterator> index_iter_;
+  std::unique_ptr<Iterator> data_iter_;  // May be nullptr
 };
 
-Iterator* NewTwoLevelIterator(Iterator* index_iter, BlockFunction func,
-                              std::any arg, const ReadOptions& options);
+std::unique_ptr<Iterator> NewTwoLevelIterator(
+    std::unique_ptr<Iterator> index_iter, BuildIterator builder,
+    const ReadOptions& options);
 
 } // namespace tinydb

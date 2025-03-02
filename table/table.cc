@@ -83,11 +83,10 @@ static void ReleaseBlock(std::any arg, std::any h) {
   cache->Release(handle);
 }
 
-// Read data block (optional from cache)
-// Return Block Iterator to seek keys
-Iterator* Table::BlockReader(std::any arg, const ReadOptions& options,
-                             const Slice& handle_value) {
-  auto table = std::any_cast<Table*>(arg);
+// Read data block (maybe from cache), return Block::Iter to seek keys
+std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
+                                             const ReadOptions& options,
+                                             const Slice& handle_value) {
   auto block_cache = table->options_.block_cache;
   Block* block = nullptr;
   Cache::Handle* cache_handle = nullptr;
@@ -123,31 +122,32 @@ Iterator* Table::BlockReader(std::any arg, const ReadOptions& options,
     }
   }
 
-  Iterator* iter;
-  if (block) {
-    iter = block->NewIterator(table->options_.comparator);
-    if (!cache_handle) {
-      iter->RegisterCleanup(&DeleteBlock, std::any(block), std::any{});
-    } else {
-      iter->RegisterCleanup(&ReleaseBlock, std::any(block_cache),
-                            std::any(cache_handle));
-    }
+  if (!block) {
+    return NewErrorIterator(st);
+  }
+  auto iter = block->NewIterator(table->options_.comparator);
+  if (!cache_handle) {
+    iter->RegisterCleanup(&DeleteBlock, std::any(block), std::any{});
   } else {
-    iter = NewErrorIterator(st);
+    iter->RegisterCleanup(&ReleaseBlock, std::any(block_cache),
+                          std::any(cache_handle));
   }
   return iter;
 }
 
-Iterator* Table::NewIterator(const ReadOptions& options) const {
-  return NewTwoLevelIterator(
-      index_block_->NewIterator(options_.comparator),
-      &Table::BlockReader, const_cast<Table*>(this), options);
+std::unique_ptr<Iterator> Table::NewIterator(const ReadOptions& options) const {
+  auto block_reader = [this](const ReadOptions& options,
+                         const Slice& handle_value) {
+    return BlockReader(this, options, handle_value);
+  };
+  return NewTwoLevelIterator(index_block_->NewIterator(options_.comparator),
+                             block_reader, options);
 }
 
 Status Table::InternalGet(const ReadOptions& options, const Slice& key,
                           HandleResult handler) {
   Status s;
-  Iterator* iiter = index_block_->NewIterator(options_.comparator);
+  auto iiter = index_block_->NewIterator(options_.comparator);
   // Seek the block containing the key
   iiter->Seek(key);
   if (iiter->Valid()) {
@@ -158,8 +158,10 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& key,
       // Not found by filter
     } else {
       // Seek the key in block
-      std::unique_ptr<Iterator> block_iter(
-          BlockReader(std::any(this), options, iiter->value()));
+      auto block_iter = BlockReader(this, options, iiter->value());
+      if (!block_iter->Valid()) {
+        return block_iter->status();
+      }
       block_iter->Seek(key);
       if (block_iter->Valid()) {
         handler(block_iter->key(), block_iter->value());
@@ -170,12 +172,11 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& key,
   if (s.ok()) {
     s = iiter->status();
   }
-  delete iiter;
   return s;
 }
 
 uint64_t Table::ApproximateOffsetOf(const Slice& key) const {
-  auto index_iter = index_block_->NewIterator(options_.comparator);  // TODO: unique_ptr
+  auto index_iter = index_block_->NewIterator(options_.comparator);
   index_iter->Seek(key);
   uint64_t result;
   if (index_iter->Valid()) {
@@ -186,7 +187,6 @@ uint64_t Table::ApproximateOffsetOf(const Slice& key) const {
       return handle.offset();
     }
   }
-  delete index_iter;
   return filter_offset_;  // approximate the last key
 }
 
