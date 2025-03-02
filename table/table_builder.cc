@@ -1,12 +1,12 @@
-#include "tinydb/table_builder.h"
+#include "table/table_builder.h"
 #include <cassert>
 #include "table/block_builder.h"
 #include "table/filter_block.h"
 #include "table/format.h"
-#include "tinydb/comparator.h"
-#include "tinydb/env.h"
-#include "tinydb/filter_policy.h"
-#include "tinydb/options.h"
+#include "common/comparator.h"
+#include "util/file.h"
+#include "common/filter_policy.h"
+#include "common/options.h"
 #include "util/coding.h"
 
 namespace tinydb {

@@ -2,7 +2,7 @@
 
 #include <any>
 #include <functional>
-#include "tinydb/slice.h"
+#include "common/slice.h"
 
 namespace tinydb {
 

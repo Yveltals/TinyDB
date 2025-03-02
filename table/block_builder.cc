@@ -1,8 +1,8 @@
 #include "table/block_builder.h"
 #include <algorithm>
 #include <cassert>
-#include "tinydb/comparator.h"
-#include "tinydb/options.h"
+#include "common/comparator.h"
+#include "common/options.h"
 #include "util/coding.h"
 
 namespace tinydb {

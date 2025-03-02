@@ -2,9 +2,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include "tinydb/comparator.h"
-#include "tinydb/filter_policy.h"
-#include "tinydb/slice.h"
+#include "common/comparator.h"
+#include "common/filter_policy.h"
+#include "common/slice.h"
 #include "util/coding.h"
 #include "util/logging.h"
 

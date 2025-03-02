@@ -2,8 +2,8 @@
 #include <set>
 #include <utility>
 #include <vector>
+#include "common/status.h"
 #include "db/dbformat.h"
-#include "tinydb/status.h"
 
 namespace tinydb {
 

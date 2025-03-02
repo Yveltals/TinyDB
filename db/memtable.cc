@@ -1,7 +1,7 @@
+#include "common/comparator.h"
+#include "common/iterator.h"
 #include "db/memtable.h"
 #include "db/dbformat.h"
-#include "tinydb/comparator.h"
-#include "tinydb/iterator.h"
 #include "util/coding.h"
 
 namespace tinydb {

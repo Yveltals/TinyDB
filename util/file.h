@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "tinydb/status.h"
+#include "common/status.h"
 
 
 #define THREAD_ANNOTATION_ATTRIBUTE__(x) __attribute__((x))
@@ -19,12 +19,12 @@ class SequentialFile;
 class RandomAccessFile;
 class WritableFile;
 
-class Env {
+class File {
  public:
-  Env();
-  Env(const Env&) = delete;
-  Env& operator=(const Env&) = delete;
-  ~Env();
+  File();
+  File(const File&) = delete;
+  File& operator=(const File&) = delete;
+  ~File();
 
   SequentialFile* NewSequentialFile(const std::string& filename);
   RandomAccessFile* NewRandomAccessFile(const std::string& filename);
@@ -34,9 +34,9 @@ class Env {
   Status RemoveFile(const std::string& filename);
 };
 
-Status WriteStringToFile(Env* env, const Slice& data,
+Status WriteStringToFile(File* file, const Slice& data,
                                 const std::string& fname, bool sync);
-Status ReadFileToString(Env* env, const std::string& fname,
+Status ReadFileToString(File* file, const std::string& fname,
                                std::string* data);
 
 class SequentialFile {

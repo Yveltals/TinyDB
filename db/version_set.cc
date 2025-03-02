@@ -7,10 +7,10 @@
 #include "db/log_writer.h"
 #include "db/memtable.h"
 #include "db/table_cache.h"
-#include "tinydb/env.h"
-#include "tinydb/table_builder.h"
+#include "table/table_builder.h"
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
+#include "util/file.h"
 #include "util/logging.h"
 
 namespace tinydb {
@@ -531,7 +531,7 @@ class VersionSet::Builder {
 VersionSet::VersionSet(const std::string& dbname, const Options* options,
                        TableCache* table_cache,
                        const InternalKeyComparator* cmp)
-    : env_(options->env),
+    : env_(options->file),
       dbname_(dbname),
       options_(options),
       table_cache_(table_cache),

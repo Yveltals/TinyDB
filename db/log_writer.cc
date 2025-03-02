@@ -1,6 +1,6 @@
 #include "db/log_writer.h"
 #include <cstdint>
-#include "tinydb/env.h"
+#include "util/file.h"
 #include "util/coding.h"
 
 namespace tinydb {

@@ -2,13 +2,13 @@
 #include <cassert>
 #include <cstdio>
 #include "db/dbformat.h"
-#include "tinydb/env.h"
+#include "util/file.h"
 #include "util/logging.h"
 
 namespace tinydb {
 
 // A utility routine: write "data" to the named file and Sync() it.
-Status WriteStringToFileSync(Env* env, const Slice& data,
+Status WriteStringToFileSync(File* file, const Slice& data,
                              const std::string& fname);
 
 static std::string MakeFileName(const std::string& dbname, uint64_t number,
@@ -107,7 +107,7 @@ bool ParseFileName(const std::string& filename, uint64_t* number,
   return true;
 }
 
-Status SetCurrentFile(Env* env, const std::string& dbname,
+Status SetCurrentFile(File* file, const std::string& dbname,
                       uint64_t descriptor_number) {
   // Remove leading "dbname/" and add newline to manifest file name
   std::string manifest = DescriptorFileName(dbname, descriptor_number);
@@ -115,12 +115,12 @@ Status SetCurrentFile(Env* env, const std::string& dbname,
   assert(contents.starts_with(dbname + "/"));
   contents.remove_prefix(dbname.size() + 1);
   std::string tmp = TempFileName(dbname, descriptor_number);
-  Status s = WriteStringToFileSync(env, contents.ToString() + "\n", tmp);
+  Status s = WriteStringToFileSync(file, contents.ToString() + "\n", tmp);
   if (s.ok()) {
-    s = env->RenameFile(tmp, CurrentFileName(dbname));
+    s = file->RenameFile(tmp, CurrentFileName(dbname));
   }
   if (!s.ok()) {
-    env->RemoveFile(tmp);
+    file->RemoveFile(tmp);
   }
   return s;
 }

@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <vector>
-#include "tinydb/comparator.h"
+#include "common/comparator.h"
 #include "util/coding.h"
 #include "util/logging.h"
 

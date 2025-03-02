@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <cstdio>
-#include "tinydb/iterator.h"
-#include "tinydb/options.h"
-#include "tinydb/write_batch.h"
+#include "common/iterator.h"
+#include "common/options.h"
+#include "db/write_batch.h"
 
 namespace tinydb {
 

@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
-#include "tinydb/env.h"
-#include "tinydb/slice.h"
-#include "tinydb/status.h"
+#include "common/slice.h"
+#include "common/status.h"
+#include "util/file.h"
 
 namespace tinydb {
 namespace log {

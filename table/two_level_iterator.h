@@ -3,9 +3,9 @@
 #include "table/format.h"
 #include "table/block.h"
 #include "table/iterator_wrapper.h"
-#include "tinydb/iterator.h"
-#include "tinydb/options.h"
-#include "tinydb/table.h"
+#include "common/iterator.h"
+#include "common/options.h"
+#include "table/table.h"
 
 namespace tinydb {
 

@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
-#include "tinydb/slice.h"
+#include "common/slice.h"
 
 namespace tinydb {
 

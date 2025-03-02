@@ -1,27 +1,26 @@
 #include "db/db_impl.h"
 #include <algorithm>
 #include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <cstdio>
-#include <condition_variable>
 #include <mutex>
 #include <set>
 #include <string>
 #include <vector>
+#include "db/db.h"
 #include "db/dbformat.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
 #include "db/memtable.h"
 #include "db/table_cache.h"
 #include "db/write_batch_internal.h"
-#include "tinydb/cache.h"
-#include "tinydb/db.h"
-#include "tinydb/env.h"
-#include "tinydb/status.h"
-#include "tinydb/table.h"
-#include "tinydb/table_builder.h"
 #include "table/block.h"
+#include "table/table.h"
+#include "table/table_builder.h"
+#include "util/cache.h"
 #include "util/coding.h"
+#include "util/file.h"
 #include "util/logging.h"
 
 namespace tinydb {
@@ -103,7 +102,7 @@ Options SanitizeOptions(const std::string& dbname,
 }
 
 DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
-    : env_(raw_options.env),
+    : env_(raw_options.file),
       internal_comparator_(raw_options.comparator),
       internal_filter_policy_(raw_options.filter_policy),
       options_(SanitizeOptions(dbname, &internal_comparator_,

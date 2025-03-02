@@ -1,18 +1,18 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include "common/iterator.h"
+#include "common/options.h"
 #include "db/dbformat.h"
-#include "tinydb/env.h"
-#include "tinydb/iterator.h"
-#include "tinydb/options.h"
-#include "tinydb/table.h"
+#include "table/table.h"
+#include "util/file.h"
 
 namespace tinydb {
 
 class TableCache {
  public:
   TableCache(const std::string& dbname, const Options& options, int entries)
-      : env_(options.env),
+      : env_(options.file),
         dbname_(dbname),
         options_(options),
         cache_(NewLRUCache(entries)) {}
@@ -33,7 +33,7 @@ class TableCache {
   // If not existed, open SSTable and insert to cache
   Status FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle**);
 
-  Env* const env_;
+  File* const env_;
   const std::string dbname_;
   const Options& options_;
   Cache* cache_;

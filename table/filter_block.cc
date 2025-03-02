@@ -1,5 +1,5 @@
 #include "table/filter_block.h"
-#include "tinydb/filter_policy.h"
+#include "common/filter_policy.h"
 #include "util/coding.h"
 
 namespace tinydb {

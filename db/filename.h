@@ -1,12 +1,12 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include "tinydb/slice.h"
-#include "tinydb/status.h"
+#include "common/slice.h"
+#include "common/status.h"
 
 namespace tinydb {
 
-class Env;
+class File;
 
 enum FileType {
   kLogFile,
@@ -60,7 +60,7 @@ bool ParseFileName(const std::string& filename, uint64_t* number,
 
 // Make the CURRENT file point to the descriptor file with the
 // specified number.
-Status SetCurrentFile(Env* env, const std::string& dbname,
+Status SetCurrentFile(File* file, const std::string& dbname,
                       uint64_t descriptor_number);
 
 }  // namespace tinydb

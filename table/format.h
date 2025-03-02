@@ -1,10 +1,10 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include "tinydb/env.h"
-#include "tinydb/options.h"
-#include "tinydb/slice.h"
-#include "tinydb/status.h"
+#include "util/file.h"
+#include "common/options.h"
+#include "common/slice.h"
+#include "common/status.h"
 
 namespace tinydb {
 

@@ -4,9 +4,9 @@
 #include <mutex>
 #include <set>
 #include <vector>
+#include "common/options.h"
 #include "db/dbformat.h"
 #include "db/version_edit.h"
-#include "tinydb/options.h"
 
 namespace tinydb {
 
@@ -218,7 +218,7 @@ class VersionSet {
 
   void AppendVersion(Version* v);
 
-  Env* const env_;
+  File* const env_;
   const std::string dbname_;
   const Options* const options_;
   TableCache* const table_cache_;

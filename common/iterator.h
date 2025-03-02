@@ -1,8 +1,8 @@
 #pragma once
 #include <any>
 #include <list>
-#include "tinydb/slice.h"
-#include "tinydb/status.h"
+#include "common/slice.h"
+#include "common/status.h"
 
 namespace tinydb {
 

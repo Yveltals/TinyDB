@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include "tinydb/options.h"
-#include "tinydb/slice.h"
+#include "common/options.h"
+#include "common/slice.h"
 
 namespace tinydb {
 

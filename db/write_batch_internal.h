@@ -1,7 +1,7 @@
 #pragma once
 #include "db/dbformat.h"
 #include "db/memtable.h"
-#include "tinydb/write_batch.h"
+#include "db/write_batch.h"
 
 namespace tinydb {
 

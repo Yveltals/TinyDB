@@ -1,5 +1,5 @@
-#include "tinydb/filter_policy.h"
-#include "tinydb/slice.h"
+#include "common/filter_policy.h"
+#include "common/slice.h"
 #include "util/hash.h"
 
 namespace tinydb {

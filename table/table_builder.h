@@ -4,9 +4,9 @@
 #include "table/block_builder.h"
 #include "table/filter_block.h"
 #include "table/format.h"
-#include "tinydb/env.h"
-#include "tinydb/options.h"
-#include "tinydb/status.h"
+#include "util/file.h"
+#include "common/options.h"
+#include "common/status.h"
 
 namespace tinydb {
 

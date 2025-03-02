@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "tinydb/slice.h"
+#include "common/slice.h"
 
 namespace tinydb {
 

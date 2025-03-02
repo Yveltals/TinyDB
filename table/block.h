@@ -2,8 +2,8 @@
 #include <cstddef>
 #include <cstdint>
 #include "table/format.h"
-#include "tinydb/iterator.h"
-#include "tinydb/comparator.h"
+#include "common/iterator.h"
+#include "common/comparator.h"
 
 namespace tinydb {
 

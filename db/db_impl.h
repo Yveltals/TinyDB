@@ -8,8 +8,8 @@
 #include "db/log_writer.h"
 #include "db/memtable.h"
 #include "db/table_cache.h"
-#include "tinydb/db.h"
-#include "tinydb/env.h"
+#include "db/db.h"
+#include "util/file.h"
 
 namespace tinydb {
 
@@ -70,7 +70,7 @@ class DBImpl : public DB {
   Status MakeRoomForWrite(bool force /* compact even if there is room? */);
 
   // Constant after construction
-  Env* const env_;
+  File* const env_;
   const InternalKeyComparator internal_comparator_;
   const InternalFilterPolicy internal_filter_policy_;
   const Options options_;  // options_.comparator == &internal_comparator_

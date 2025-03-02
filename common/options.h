@@ -1,9 +1,9 @@
 #pragma once
 #include <cstddef>
-#include "tinydb/cache.h"
-#include "tinydb/comparator.h"
-#include "tinydb/env.h"
-#include "tinydb/filter_policy.h"
+#include "util/cache.h"
+#include "common/comparator.h"
+#include "util/file.h"
+#include "common/filter_policy.h"
 
 namespace tinydb {
 
@@ -13,7 +13,7 @@ struct Options {
   bool create_if_missing = false;
   // If true, an error is raised if the database already exists.
   bool error_if_exists = false;
-  Env* env;
+  File* file;
   size_t write_buffer_size = 4 * 1024 * 1024;
   size_t max_open_files = 1000;
   Cache* block_cache = nullptr;

@@ -1,8 +1,8 @@
 #include "table/format.h"
 #include <memory>
 #include "table/block.h"
-#include "tinydb/env.h"
-#include "tinydb/options.h"
+#include "util/file.h"
+#include "common/options.h"
 #include "util/coding.h"
 
 namespace tinydb {
