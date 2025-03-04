@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+
 #include "common/filter_policy.h"
 #include "common/slice.h"
 #include "util/hash.h"
@@ -23,10 +24,10 @@ class FilterBlockBuilder {
   void GenerateFilter();
 
   const FilterPolicy* policy_;
-  std::string keys_;             // Flattened key contents
-  std::vector<size_t> start_;    // Starting index in keys_ of each key
-  std::string result_;           // Filter data computed so far
-  std::vector<Slice> tmp_keys_;  // policy_->CreateFilter() argument
+  std::string keys_;            // Flattened key contents
+  std::vector<size_t> start_;   // Starting index in keys_ of each key
+  std::string result_;          // Filter data computed so far
+  std::vector<Slice> tmp_keys_; // policy_->CreateFilter() argument
   std::vector<uint32_t> filter_offsets_;
 };
 
@@ -38,10 +39,10 @@ class FilterBlockReader {
 
  private:
   const FilterPolicy* policy_;
-  const char* data_;    // Pointer to filter data (at block-start)
-  const char* offset_;  // Pointer to beginning of offset array (at block-end)
-  size_t num_;          // Number of entries in offset array
-  size_t base_lg_;      // Encoding parameter (kFilterBaseLg)
+  const char* data_;   // Pointer to filter data (at block-start)
+  const char* offset_; // Pointer to beginning of offset array (at block-end)
+  size_t num_;         // Number of entries in offset array
+  size_t base_lg_;     // Encoding parameter (kFilterBaseLg)
 };
 
 } // namespace tinydb

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+
 #include "common/status.h"
 #include "db/dbformat.h"
 #include "db/memtable.h"
@@ -32,7 +33,6 @@ class WriteBatch {
 
   std::string rep_;
 };
-
 
 // Helper class to handle WriteBatch
 class WriteBatchInternal {

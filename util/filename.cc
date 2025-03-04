@@ -1,9 +1,11 @@
 #include "util/filename.h"
+
 #include <cassert>
 #include <cstdio>
+
 #include "db/dbformat.h"
-#include "util/file.h"
 #include "log/logging.h"
+#include "util/file.h"
 
 namespace tinydb {
 
@@ -125,4 +127,4 @@ Status SetCurrentFile(File* file, const std::string& dbname,
   return s;
 }
 
-}  // namespace tinydb
+} // namespace tinydb

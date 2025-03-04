@@ -4,14 +4,16 @@
 #include <mutex>
 #include <set>
 #include <vector>
+
 #include "common/options.h"
 #include "db/dbformat.h"
-#include "log/log_writer.h"
 #include "db/table_cache.h"
 #include "db/version.h"
+#include "log/log_writer.h"
 
 namespace tinydb {
 
+class Compaction;
 class Version;
 
 // Returns true iff some file in "files" overlaps the user key range
@@ -26,6 +28,9 @@ bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
                            const Slice* smallest_user_key,
                            const Slice* largest_user_key);
 
+void AddBoundaryInputs(const InternalKeyComparator& icmp,
+                       const std::vector<FileMetaData*>& level_files,
+                       std::vector<FileMetaData*>* compaction_files);
 
 class VersionSet {
  public:
@@ -94,7 +99,7 @@ class VersionSet {
 
   // Create an iterator that reads over the compaction inputs for "*c".
   // The caller should delete the iterator when no longer needed.
-  // std::unique_ptr<Iterator> MakeInputIterator(Compaction* c);
+  std::unique_ptr<Iterator> MakeInputIterator(Compaction* c);
 
   // Add all files listed in any live version to *live.
   // May also mutate some internal state.
@@ -107,6 +112,12 @@ class VersionSet {
   // Return a human-readable short (single-line) summary of the number
   // of files per level.  Uses *scratch as backing store.
   std::string LevelSummary() const;
+
+  bool NeedsCompaction() const { return current_->compaction_score_ >= 1; }
+
+  Compaction* PickCompaction();
+
+  void SetupOtherInputs(Compaction* c);
 
  private:
   class Builder;
@@ -124,7 +135,7 @@ class VersionSet {
   Status WriteSnapshot(log::Writer* log);
   void AppendVersion(Version* v);
 
-  File* const env_;
+  File* const file_;
   const std::string dbname_;
   const Options* const options_;
   TableCache* const table_cache_;
@@ -133,14 +144,86 @@ class VersionSet {
   uint64_t manifest_file_number_;
   uint64_t last_sequence_;
   uint64_t log_number_;
-  uint64_t prev_log_number_;  // 0 or backing store for memtable being compacted
+  uint64_t prev_log_number_; // 0 or backing store for memtable being compacted
 
   // Opened lazily
   std::unique_ptr<log::Writer> descriptor_log_;
-  // WritableFile* descriptor_file_;
-  // log::Writer* descriptor_log_;
   std::list<Version*> versions_;
   Version* current_;
+
+  // Per-level key at which the next compaction at that level should start.
+  std::string compact_pointer_[config::kNumLevels];
 };
 
-}  // namespace tinydb
+// A Compaction encapsulates information about a compaction.
+class Compaction {
+ public:
+  ~Compaction();
+
+  // Return the level that is being compacted.  Inputs from "level"
+  // and "level+1" will be merged to produce a set of "level+1" files.
+  int level() const { return level_; }
+
+  // Return the object that holds the edits to the descriptor done
+  // by this compaction.
+  VersionEdit* edit() { return &edit_; }
+
+  // "which" must be either 0 or 1
+  int num_input_files(int which) const { return inputs_[which].size(); }
+
+  // Return the ith input file at "level()+which" ("which" must be 0 or 1).
+  FileMetaData* input(int which, int i) const { return inputs_[which][i]; }
+
+  // Maximum size of files to build during this compaction.
+  uint64_t MaxOutputFileSize() const { return max_output_file_size_; }
+
+  // Is this a trivial compaction that can be implemented by just
+  // moving a single input file to the next level (no merging or splitting)
+  bool IsTrivialMove() const;
+
+  // Add all inputs to this compaction as delete operations to *edit.
+  void AddInputDeletions(VersionEdit* edit);
+
+  // Returns true if the information we have available guarantees that
+  // the compaction is producing data in "level+1" for which no data exists
+  // in levels greater than "level+1".
+  bool IsBaseLevelForKey(const Slice& user_key);
+
+  // Returns true iff we should stop building the current output
+  // before processing "internal_key".
+  bool ShouldStopBefore(const Slice& internal_key);
+
+  // Release the input version for the compaction, once the compaction
+  // is successful.
+  void ReleaseInputs();
+
+ private:
+  friend class Version;
+  friend class VersionSet;
+
+  Compaction(const Options* options, int level);
+
+  int level_;
+  uint64_t max_output_file_size_;
+  Version* input_version_;
+  VersionEdit edit_;
+
+  // Each compaction reads inputs from "level_" and "level_+1"
+  std::vector<FileMetaData*> inputs_[2];
+
+  // State used to check for number of overlapping grandparent files
+  // (parent == level_ + 1, grandparent == level_ + 2)
+  std::vector<FileMetaData*> grandparents_;
+  size_t grandparent_index_; // Index in grandparent_starts_
+  bool seen_key_;            // Some output key has been seen
+  int64_t overlapped_bytes_; // Bytes of overlap between current output
+                             // and grandparent files
+
+  // level_ptrs_ holds indices into input_version_->levels_: our state
+  // is that we are positioned at one of the file ranges for each
+  // higher level than the ones involved in this compaction (i.e. for
+  // all L >= level_ + 2).
+  size_t level_ptrs_[config::kNumLevels];
+};
+
+} // namespace tinydb

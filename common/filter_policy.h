@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+
 #include "common/slice.h"
 
 namespace tinydb {
@@ -18,4 +19,4 @@ class FilterPolicy {
 // result has been closed.
 const FilterPolicy* NewBloomFilterPolicy(int bits_per_key);
 
-}  // namespace tinydb
+} // namespace tinydb

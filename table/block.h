@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+
 #include "common/comparator.h"
 #include "common/iterator.h"
 #include "table/format.h"
@@ -14,7 +15,7 @@ class Block {
         size_(contents.data.size()),
         owned_(contents.heap_allocated) {
     if (size_ < sizeof(uint32_t)) {
-      size_ = 0;  // Error marker
+      size_ = 0; // Error marker
     }
   }
   Block(const Block&) = delete;
@@ -29,8 +30,6 @@ class Block {
   std::unique_ptr<Iterator> NewIterator(const Comparator* comparator);
 
  private:
-  class Iter;
-
   const char* data_;
   size_t size_;
   bool owned_; // Block owns data_[]

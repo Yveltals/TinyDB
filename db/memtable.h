@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
+
 #include "common/iterator.h"
-#include "db/skiplist.h"
 #include "db/dbformat.h"
+#include "db/skiplist.h"
 #include "util/arena.h"
 
 namespace tinydb {

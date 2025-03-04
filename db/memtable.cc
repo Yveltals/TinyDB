@@ -1,6 +1,7 @@
+#include "db/memtable.h"
+
 #include "common/comparator.h"
 #include "common/iterator.h"
-#include "db/memtable.h"
 #include "db/dbformat.h"
 #include "util/coding.h"
 

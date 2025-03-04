@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+
 #include "common/slice.h"
 
 namespace tinydb {
@@ -104,4 +105,4 @@ inline const char* GetVarint32Ptr(const char* p, const char* limit,
   return GetVarint32PtrFallback(p, limit, value);
 }
 
-}  // namespace tinydb
+} // namespace tinydb

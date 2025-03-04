@@ -1,5 +1,7 @@
 #include "util/hash.h"
+
 #include <cstring>
+
 #include "util/coding.h"
 
 namespace tinydb {
@@ -35,4 +37,4 @@ uint32_t Hash(const char* data, size_t n, uint32_t seed) {
   return h;
 }
 
-}  // namespace tinydb
+} // namespace tinydb

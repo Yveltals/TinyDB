@@ -2,6 +2,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdlib>
+
 #include "util/arena.h"
 
 namespace tinydb {
@@ -12,7 +13,7 @@ class SkipList {
   struct Node;
 
  public:
-  // obj allocate in arena must remain for the lifetime of skiplist 
+  // obj allocate in arena must remain for the lifetime of skiplist
   explicit SkipList(Comparator cmp, Arena* arena);
 
   SkipList(const SkipList&) = delete;
@@ -49,9 +50,7 @@ class SkipList {
 
   Node* NewNode(const Key& key, int height);
   int RandomHeight();
-  bool Equal(const Key& a, const Key& b) const {
-    return compare_(a, b) == 0;
-  }
+  bool Equal(const Key& a, const Key& b) const { return compare_(a, b) == 0; }
   // Return true if key is greater than the data stored in "n"
   bool KeyIsAfterNode(const Key& key, Node* n) const;
 
@@ -151,7 +150,6 @@ inline void SkipList<Key, Comparator>::Iterator::SeekToLast() {
   }
 }
 
-
 template <typename Key, class Comparator>
 int SkipList<Key, Comparator>::RandomHeight() {
   static const unsigned int kBranching = 4;
@@ -170,8 +168,8 @@ bool SkipList<Key, Comparator>::KeyIsAfterNode(const Key& key, Node* n) const {
 
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node*
-SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
-                                              Node** prev) const {
+    SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
+                                                  Node** prev) const {
   Node* x = head_;
   int level = GetMaxHeight() - 1;
   while (true) {
@@ -193,7 +191,7 @@ SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
 
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node*
-SkipList<Key, Comparator>::FindLessThan(const Key& key) const {
+    SkipList<Key, Comparator>::FindLessThan(const Key& key) const {
   Node* x = head_;
   int level = GetMaxHeight() - 1;
   while (true) {
@@ -285,4 +283,4 @@ bool SkipList<Key, Comparator>::Contains(const Key& key) const {
   }
 }
 
-}  // namespace tinydb
+} // namespace tinydb

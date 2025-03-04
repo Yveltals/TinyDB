@@ -1,10 +1,12 @@
 #include "util/cache.h"
+
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
+
 #include "util/hash.h"
 
 namespace tinydb {
@@ -38,9 +40,7 @@ struct LRUHandleHash {
 };
 
 struct LRUHandleEqual {
-  bool operator()(const Slice a, const Slice b) const {
-    return a == b;
-  }
+  bool operator()(const Slice a, const Slice b) const { return a == b; }
 };
 
 class LRUCache {
@@ -99,7 +99,7 @@ class LRUCache {
 };
 
 void LRUCache::Ref(LRUHandle* e) {
-  if (e->refs == 1 && e->in_cache) {  // if on lru_, move to in_use_ list
+  if (e->refs == 1 && e->in_cache) { // if on lru_, move to in_use_ list
     LRU_Remove(e);
     LRU_Append(&in_use_, e);
   }
@@ -109,7 +109,7 @@ void LRUCache::Ref(LRUHandle* e) {
 void LRUCache::Unref(LRUHandle* e) {
   assert(e->refs > 0);
   e->refs--;
-  if (e->refs == 0) {  // Deallocate
+  if (e->refs == 0) { // Deallocate
     assert(!e->in_cache);
     e->deleter(e->key(), e->value);
     free(e);
@@ -260,4 +260,4 @@ class ShardedLRUCache : public Cache {
 
 Cache* NewLRUCache(size_t capacity) { return new ShardedLRUCache(capacity); }
 
-}  // namespace tinydb
+} // namespace tinydb

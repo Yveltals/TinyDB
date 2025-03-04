@@ -31,4 +31,4 @@ class Arena {
   std::atomic<size_t> memory_usage_;
 };
 
-}
+} // namespace tinydb

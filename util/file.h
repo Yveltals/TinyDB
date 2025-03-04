@@ -5,8 +5,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "common/status.h"
 
+#include "common/status.h"
 
 #define THREAD_ANNOTATION_ATTRIBUTE__(x) __attribute__((x))
 #define GUARDED_BY(x) THREAD_ANNOTATION_ATTRIBUTE__(guarded_by(x))
@@ -29,15 +29,18 @@ class File {
   SequentialFile* NewSequentialFile(const std::string& filename);
   RandomAccessFile* NewRandomAccessFile(const std::string& filename);
   WritableFile* NewWritableFile(const std::string& filename);
+  WritableFile* NewAppendableFile(const std::string& filename);
 
   Status RenameFile(const std::string& from, const std::string& to);
   Status RemoveFile(const std::string& filename);
+  Status GetChildren(const std::string& dir_path,
+                     std::vector<std::string>* result);
 };
 
 Status WriteStringToFile(File* file, const Slice& data,
-                                const std::string& fname, bool sync);
+                         const std::string& fname, bool sync);
 Status ReadFileToString(File* file, const std::string& fname,
-                               std::string* data);
+                        std::string* data);
 
 class SequentialFile {
  public:
@@ -47,7 +50,6 @@ class SequentialFile {
   SequentialFile(const SequentialFile&) = delete;
   SequentialFile& operator=(SequentialFile&) = delete;
   ~SequentialFile() { file_.close(); }
-  
 
   Status Read(size_t n, Slice* result, char* scratch);
 
@@ -74,10 +76,13 @@ class RandomAccessFile {
 
 class WritableFile {
  public:
-  WritableFile(const std::string& filename)
-      : buffer_(new char[kWritableFileBufferSize]),
-        filename_(filename) {
-    file_.open(filename, std::ios::out | std::ios::trunc);
+  WritableFile(const std::string& filename, bool append)
+      : buffer_(new char[kWritableFileBufferSize]), filename_(filename) {
+    if (append) {
+      file_.open(filename, std::ios::app);
+    } else {
+      file_.open(filename, std::ios::out | std::ios::trunc);
+    }
   };
   WritableFile(const WritableFile&) = delete;
   WritableFile& operator=(const WritableFile&) = delete;

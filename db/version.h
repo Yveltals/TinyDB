@@ -1,7 +1,8 @@
 #pragma once
-#include "common/options.h"
 #include "common/iterator.h"
+#include "common/options.h"
 #include "db/version_edit.h"
+#include "iterator/iterator_base.h"
 
 namespace tinydb {
 
@@ -21,6 +22,9 @@ int FindFile(const InternalKeyComparator& icmp,
              const std::vector<FileMetaData*>& files, const Slice& key);
 
 int64_t TotalFileSize(const std::vector<FileMetaData*>& files);
+uint64_t MaxFileSizeForLevel(const Options* options, int level);
+int64_t MaxGrandParentOverlapBytes(const Options* options);
+int64_t ExpandedCompactionByteSizeLimit(const Options* options);
 
 class Version {
  public:
@@ -39,8 +43,8 @@ class Version {
 
   void GetOverlappingInputs(
       int level,
-      const InternalKey* begin,  // nullptr means before all keys
-      const InternalKey* end,    // nullptr means after all keys
+      const InternalKey* begin, // nullptr means before all keys
+      const InternalKey* end,   // nullptr means after all keys
       std::vector<FileMetaData*>* inputs);
 
   // Returns true iff some file in the specified level overlaps
@@ -61,9 +65,9 @@ class Version {
  private:
   friend class Compaction;
   friend class VersionSet;
-  class LevelFileNumIterator;
 
-  explicit Version(VersionSet* vset) : vset_(vset), refs_(0) {}
+  explicit Version(VersionSet* vset)
+      : vset_(vset), refs_(0), compaction_score_(-1), compaction_level_(-1) {}
   Version(const Version&) = delete;
   Version& operator=(const Version&) = delete;
   ~Version();
@@ -73,10 +77,15 @@ class Version {
   void ForEachOverlapping(Slice internal_key,
                           std::function<bool(FileMetaData*)>);
 
-  VersionSet* vset_;  // VersionSet to which this Version belongs
+  VersionSet* vset_; // VersionSet to which this Version belongs
   int refs_;
   // List of files per level
   std::vector<FileMetaData*> files_[config::kNumLevels];
+
+  // Level that should be compacted next and its compaction score.
+  // Score < 1 means compaction is not strictly needed.
+  double compaction_score_;
+  int compaction_level_;
 };
 
 } // namespace tinydb

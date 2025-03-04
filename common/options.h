@@ -1,9 +1,10 @@
 #pragma once
 #include <cstddef>
-#include "util/cache.h"
+
 #include "common/comparator.h"
-#include "util/file.h"
 #include "common/filter_policy.h"
+#include "util/cache.h"
+#include "util/file.h"
 
 namespace tinydb {
 

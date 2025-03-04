@@ -1,9 +1,10 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include "common/iterator.h"
+
 #include "common/options.h"
 #include "db/dbformat.h"
+#include "iterator/iterator_base.h"
 #include "table/table.h"
 #include "util/file.h"
 
@@ -12,7 +13,7 @@ namespace tinydb {
 class TableCache {
  public:
   TableCache(const std::string& dbname, const Options& options, int entries)
-      : env_(options.file),
+      : file_(options.file),
         dbname_(dbname),
         options_(options),
         cache_(NewLRUCache(entries)) {}
@@ -36,7 +37,7 @@ class TableCache {
   Status FindOrOpenTable(uint64_t file_number, uint64_t file_size,
                          Cache::Handle**);
 
-  File* const env_;
+  File* const file_;
   const std::string dbname_;
   const Options& options_;
   Cache* cache_;

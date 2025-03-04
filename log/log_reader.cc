@@ -1,6 +1,8 @@
 #include "log/log_reader.h"
+
 #include <cstdio>
 #include <iostream>
+
 #include "util/file.h"
 
 namespace tinydb {

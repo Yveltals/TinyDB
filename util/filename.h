@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+
 #include "common/slice.h"
 #include "common/status.h"
 
@@ -15,7 +16,7 @@ enum FileType {
   kDescriptorFile,
   kCurrentFile,
   kTempFile,
-  kInfoLogFile  // Either the current one, or an old one
+  kInfoLogFile // Either the current one, or an old one
 };
 
 // Return the name of the log file with the specified number
@@ -63,4 +64,4 @@ bool ParseFileName(const std::string& filename, uint64_t* number,
 Status SetCurrentFile(File* file, const std::string& dbname,
                       uint64_t descriptor_number);
 
-}  // namespace tinydb
+} // namespace tinydb

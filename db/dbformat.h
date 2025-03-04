@@ -2,11 +2,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+
 #include "common/comparator.h"
 #include "common/filter_policy.h"
 #include "common/slice.h"
-#include "util/coding.h"
 #include "log/logging.h"
+#include "util/coding.h"
 
 namespace tinydb {
 
@@ -28,7 +29,6 @@ static const int kMaxMemCompactLevel = 2;
 // Approximate gap in bytes between samples of data read during iteration.
 static const int kReadBytesPeriod = 1048576;
 } // namespace config
-
 
 enum ValueType { kTypeDeletion = 0x0, kTypeValue = 0x1 };
 static const ValueType kValueTypeForSeek = kTypeValue;

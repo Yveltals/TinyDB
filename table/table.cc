@@ -1,14 +1,15 @@
 #include "table/table.h"
-#include "util/cache.h"
+
 #include "common/comparator.h"
-#include "util/file.h"
 #include "common/filter_policy.h"
 #include "common/options.h"
+#include "iterator/iterator_two_level.h"
 #include "table/block.h"
 #include "table/filter_block.h"
 #include "table/format.h"
-#include "table/two_level_iterator.h"
+#include "util/cache.h"
 #include "util/coding.h"
+#include "util/file.h"
 
 namespace tinydb {
 
@@ -64,7 +65,7 @@ void Table::ReadFilter(const Footer& footer) {
     return;
   }
   if (block.heap_allocated) {
-    filter_data_ = block.data.data();  // Will need to delete later
+    filter_data_ = block.data.data(); // Will need to delete later
   }
   filter_ = new FilterBlockReader(options_.filter_policy, block.data);
 }
@@ -83,7 +84,7 @@ static void ReleaseBlock(std::any arg, std::any h) {
   cache->Release(handle);
 }
 
-// Read data block (maybe from cache), return Block::Iter to seek keys
+// Read data block (maybe from cache), return IteratorBlock to seek keys
 std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
                                              const ReadOptions& options,
                                              const Slice& handle_value) {
@@ -109,8 +110,8 @@ std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
         if (st.ok()) {
           block = new Block(contents);
           if (contents.cachable && options.fill_cache) {
-            cache_handle = block_cache->Insert(key, std::any(block),
-                                              block->size(), &DeleteCachedBlock);
+            cache_handle = block_cache->Insert(
+                key, std::any(block), block->size(), &DeleteCachedBlock);
           }
         }
       }
@@ -137,7 +138,7 @@ std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
 
 std::unique_ptr<Iterator> Table::NewIterator(const ReadOptions& options) const {
   auto block_reader = [this](const ReadOptions& options,
-                         const Slice& handle_value) {
+                             const Slice& handle_value) {
     return BlockReader(this, options, handle_value);
   };
   return NewTwoLevelIterator(index_block_->NewIterator(options_.comparator),
@@ -187,7 +188,7 @@ uint64_t Table::ApproximateOffsetOf(const Slice& key) const {
       return handle.offset();
     }
   }
-  return filter_offset_;  // approximate the last key
+  return filter_offset_; // approximate the last key
 }
 
 } // namespace tinydb

@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cstdint>
+
+#include "common/iterator.h"
+#include "common/options.h"
 #include "table/block.h"
 #include "table/filter_block.h"
 #include "table/format.h"
-#include "common/iterator.h"
-#include "common/options.h"
 #include "util/file.h"
 
 namespace tinydb {
@@ -46,7 +47,7 @@ class Table {
 
   Status InternalGet(const ReadOptions&, const Slice& key,
                      HandleResult handler);
-  
+
   void ReadFilter(const Footer& footer);
 
   Options options_;

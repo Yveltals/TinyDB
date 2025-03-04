@@ -1,5 +1,7 @@
 #include "table/format.h"
+
 #include <memory>
+
 #include "common/options.h"
 #include "table/block.h"
 #include "util/coding.h"
@@ -26,7 +28,7 @@ Status BlockHandle::DecodeFrom(Slice* input) {
 void Footer::EncodeTo(std::string* dst) const {
   filter_handle_.EncodeTo(dst);
   index_handle_.EncodeTo(dst);
-  dst->resize(2 * BlockHandle::kMaxEncodedLength);  // Padding
+  dst->resize(2 * BlockHandle::kMaxEncodedLength); // Padding
 }
 
 Status Footer::DecodeFrom(Slice* input) {
@@ -62,4 +64,4 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   return Status::OK();
 }
 
-}  // namespace tinydb
+} // namespace tinydb

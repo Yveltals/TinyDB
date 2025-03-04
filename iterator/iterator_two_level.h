@@ -1,9 +1,9 @@
 #pragma once
 
-#include "table/format.h"
-#include "table/block.h"
-#include "common/iterator.h"
 #include "common/options.h"
+#include "iterator/iterator_base.h"
+#include "table/block.h"
+#include "table/format.h"
 #include "table/table.h"
 
 namespace tinydb {
@@ -12,12 +12,12 @@ namespace tinydb {
 using BuildIterator = std::function<std::unique_ptr<Iterator>(
     const ReadOptions& options, const Slice&)>;
 
-class TwoLevelIterator : public Iterator {
+class IteratorTwoLevel : public Iterator {
  public:
-  TwoLevelIterator(std::unique_ptr<Iterator> index_iter,
-                   BuildIterator builder, const ReadOptions& options);
+  IteratorTwoLevel(std::unique_ptr<Iterator> index_iter, BuildIterator builder,
+                   const ReadOptions& options);
 
-  ~TwoLevelIterator() override;
+  ~IteratorTwoLevel() override;
 
   void Seek(const Slice& target) override;
   void SeekToFirst() override;
@@ -56,7 +56,7 @@ class TwoLevelIterator : public Iterator {
   const ReadOptions options_;
   Status status_;
   std::unique_ptr<Iterator> index_iter_;
-  std::unique_ptr<Iterator> data_iter_;  // May be nullptr
+  std::unique_ptr<Iterator> data_iter_; // May be nullptr
 };
 
 std::unique_ptr<Iterator> NewTwoLevelIterator(

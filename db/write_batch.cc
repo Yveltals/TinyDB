@@ -1,4 +1,5 @@
 #include "db/write_batch.h"
+
 #include "db/dbformat.h"
 #include "util/coding.h"
 
@@ -84,7 +85,7 @@ class MemTableInserter : public WriteBatch::Handler {
     sequence_++;
   }
 };
-}  // namespace
+} // namespace
 
 Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
   MemTableInserter inserter;

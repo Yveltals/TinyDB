@@ -2,6 +2,7 @@
 #include <any>
 #include <list>
 #include <memory>
+
 #include "common/slice.h"
 #include "common/status.h"
 
@@ -9,10 +10,15 @@ namespace tinydb {
 
 class Iterator {
  public:
-  Iterator();
+  Iterator() = default;
   Iterator(const Iterator&) = delete;
   Iterator& operator=(const Iterator&) = delete;
-  virtual ~Iterator();
+  virtual ~Iterator() {
+    for (auto it = cleanup_list_.begin(); it != cleanup_list_.end();) {
+      it->fun(it->arg1, it->arg2);
+      it = cleanup_list_.erase(it);
+    }
+  }
 
   virtual bool Valid() const = 0;
   virtual void SeekToFirst() = 0;
@@ -25,7 +31,9 @@ class Iterator {
   virtual Status status() const = 0;
 
   using CleanupFun = std::function<void(std::any, std::any)>;
-  void RegisterCleanup(CleanupFun fun, std::any arg1, std::any arg2);
+  void RegisterCleanup(CleanupFun func, std::any arg1, std::any arg2) {
+    cleanup_list_.emplace_back(func, arg1, arg2);
+  }
 
  private:
   struct CleanupNode {
@@ -37,8 +45,5 @@ class Iterator {
   };
   std::list<CleanupNode> cleanup_list_;
 };
-
-std::unique_ptr<Iterator> NewEmptyIterator();
-std::unique_ptr<Iterator> NewErrorIterator(const Status& status);
 
 } // namespace tinydb

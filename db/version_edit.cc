@@ -1,4 +1,5 @@
 #include "db/version_edit.h"
+
 #include "util/coding.h"
 
 namespace tinydb {
@@ -57,20 +58,20 @@ void VersionEdit::EncodeTo(std::string* dst) const {
 
   for (size_t i = 0; i < compact_pointers_.size(); i++) {
     PutVarint32(dst, kCompactPointer);
-    PutVarint32(dst, compact_pointers_[i].first);  // level
+    PutVarint32(dst, compact_pointers_[i].first); // level
     PutLengthPrefixedSlice(dst, compact_pointers_[i].second.Data());
   }
 
   for (const auto& deleted_file_kvp : deleted_files_) {
     PutVarint32(dst, kDeletedFile);
-    PutVarint32(dst, deleted_file_kvp.first);   // level
-    PutVarint64(dst, deleted_file_kvp.second);  // file number
+    PutVarint32(dst, deleted_file_kvp.first);  // level
+    PutVarint64(dst, deleted_file_kvp.second); // file number
   }
 
   for (size_t i = 0; i < new_files_.size(); i++) {
     const FileMetaData& f = new_files_[i].second;
     PutVarint32(dst, kNewFile);
-    PutVarint32(dst, new_files_[i].first);  // level
+    PutVarint32(dst, new_files_[i].first); // level
     PutVarint64(dst, f.number);
     PutVarint64(dst, f.file_size);
     PutLengthPrefixedSlice(dst, f.smallest.Data());
@@ -249,4 +250,4 @@ std::string VersionEdit::DebugString() const {
   return r;
 }
 
-}  // namespace tinydb
+} // namespace tinydb

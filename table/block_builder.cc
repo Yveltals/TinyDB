@@ -1,6 +1,8 @@
 #include "table/block_builder.h"
+
 #include <algorithm>
 #include <cassert>
+
 #include "common/comparator.h"
 #include "common/options.h"
 #include "util/coding.h"

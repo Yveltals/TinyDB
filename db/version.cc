@@ -1,20 +1,21 @@
 #include "db/version.h"
+
 #include "db/table_cache.h"
 #include "db/version_set.h"
-#include "table/two_level_iterator.h"
+#include "iterator/iterator_level_files.h"
+#include "iterator/iterator_two_level.h"
 
 namespace tinydb {
-
 
 static size_t TargetFileSize(const Options* options) {
   return options->max_file_size;
 }
 
-static int64_t MaxGrandParentOverlapBytes(const Options* options) {
+int64_t MaxGrandParentOverlapBytes(const Options* options) {
   return 10 * TargetFileSize(options);
 }
 
-static int64_t ExpandedCompactionByteSizeLimit(const Options* options) {
+int64_t ExpandedCompactionByteSizeLimit(const Options* options) {
   return 25 * TargetFileSize(options);
 }
 
@@ -27,7 +28,7 @@ static double MaxBytesForLevel(const Options* options, int level) {
   return result;
 }
 
-static uint64_t MaxFileSizeForLevel(const Options* options, int level) {
+uint64_t MaxFileSizeForLevel(const Options* options, int level) {
   return TargetFileSize(options);
 }
 
@@ -55,7 +56,6 @@ int FindFile(const InternalKeyComparator& icmp,
   return right;
 }
 
-
 Version::~Version() {
   assert(refs_ == 0);
   // Drop references to files
@@ -69,53 +69,6 @@ Version::~Version() {
     }
   }
 }
-
-// Seek where the key is, in the specified layer files.
-// value() is an 16-byte value containing the file number and file size
-class Version::LevelFileNumIterator : public Iterator {
- public:
-  LevelFileNumIterator(const InternalKeyComparator& icmp,
-                       const std::vector<FileMetaData*>* flist)
-      : icmp_(icmp), flist_(flist), index_(flist->size()) { // Marks as invalid
-  }
-  bool Valid() const override { return index_ < flist_->size(); }
-  void Seek(const Slice& target) override {
-    index_ = FindFile(icmp_, *flist_, target);
-  }
-  void SeekToFirst() override { index_ = 0; }
-  void SeekToLast() override {
-    index_ = flist_->empty() ? 0 : flist_->size() - 1;
-  }
-  void Next() override {
-    assert(Valid());
-    index_++;
-  }
-  void Prev() override {
-    assert(Valid());
-    if (index_ == 0) {
-      index_ = flist_->size();  // Marks as invalid
-    } else {
-      index_--;
-    }
-  }
-  Slice key() const override {
-    assert(Valid());
-    return (*flist_)[index_]->largest.Data();
-  }
-  Slice value() const override {
-    assert(Valid());
-    EncodeFixed64(value_buf_, (*flist_)[index_]->number);
-    EncodeFixed64(value_buf_ + 8, (*flist_)[index_]->file_size);
-    return Slice(value_buf_, sizeof(value_buf_));
-  }
-  Status status() const override { return Status::OK(); }
-
- private:
-  const InternalKeyComparator icmp_;
-  const std::vector<FileMetaData*>* const flist_;
-  uint32_t index_;
-  mutable char value_buf_[16]; // Holds the file number and size.
-};
 
 void Version::AddIterators(const ReadOptions& options,
                            std::vector<std::unique_ptr<Iterator>>* iters) {
@@ -131,7 +84,7 @@ void Version::AddIterators(const ReadOptions& options,
     if (!files_[level].empty()) {
       // Iterator of level-files
       auto file_iter =
-          std::make_unique<LevelFileNumIterator>(vset_->icmp_, &files_[level]);
+          std::make_unique<IteratorLevelFiles>(vset_->icmp_, &files_[level]);
 
       // Callback to build data_block iterator, return Table::Iterator
       auto table_iterator = [&table_cache](const ReadOptions& options,
@@ -152,8 +105,8 @@ void Version::AddIterators(const ReadOptions& options,
   }
 }
 
-void Version::ForEachOverlapping(
-    Slice internal_key, std::function<bool(FileMetaData*)> func) {
+void Version::ForEachOverlapping(Slice internal_key,
+                                 std::function<bool(FileMetaData*)> func) {
   Slice user_key = ExtractUserKey(internal_key);
   const Comparator* ucmp = vset_->icmp_.user_comparator();
   // Search level-0 in order from newest to oldest.
@@ -230,7 +183,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& key,
     }
     switch (state) {
       case kNotFound:
-        return true;  // Keep searching in other files
+        return true; // Keep searching in other files
       case kFound:
         found = true;
         return false;

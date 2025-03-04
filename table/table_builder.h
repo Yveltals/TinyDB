@@ -1,12 +1,13 @@
 #pragma once
 
 #include <cstdint>
+
+#include "common/options.h"
+#include "common/status.h"
 #include "table/block_builder.h"
 #include "table/filter_block.h"
 #include "table/format.h"
 #include "util/file.h"
-#include "common/options.h"
-#include "common/status.h"
 
 namespace tinydb {
 
@@ -43,7 +44,7 @@ class TableBuilder {
   bool closed_;
   // Should add index for current key? Only when a new data block created
   bool pending_index_entry_;
-  BlockHandle data_block_handle_;  // Current pended data block
+  BlockHandle data_block_handle_; // Current pended data block
 };
 
 } // namespace tinydb

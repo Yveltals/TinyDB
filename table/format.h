@@ -1,10 +1,11 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include "util/file.h"
+
 #include "common/options.h"
 #include "common/slice.h"
 #include "common/status.h"
+#include "util/file.h"
 
 namespace tinydb {
 
@@ -46,15 +47,13 @@ class Footer {
 };
 
 struct BlockContents {
-  Slice data;           // Actual contents of data
-  bool cachable;        // True iff data can be cached
-  bool heap_allocated;  // True iff caller should delete[] data.data()
+  Slice data;          // Actual contents of data
+  bool cachable;       // True iff data can be cached
+  bool heap_allocated; // True iff caller should delete[] data.data()
 };
 
 // Read the block identified by "handle" from "file"
 Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
                  const BlockHandle& handle, BlockContents* result);
 
-
-}  // namespace tinydb
-
+} // namespace tinydb

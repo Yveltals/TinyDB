@@ -1,6 +1,5 @@
 #include "log/logging.h"
 
-
 #include "common/slice.h"
 
 namespace tinydb {

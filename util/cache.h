@@ -2,6 +2,7 @@
 
 #include <any>
 #include <functional>
+
 #include "common/slice.h"
 
 namespace tinydb {
@@ -68,4 +69,4 @@ class Cache {
 
 Cache* NewLRUCache(size_t capacity);
 
-}  // namespace tinydb
+} // namespace tinydb

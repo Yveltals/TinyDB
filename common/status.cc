@@ -1,6 +1,7 @@
 #include "common/status.h"
-#include <cstring>
+
 #include <cstdio>
+#include <cstring>
 
 namespace tinydb {
 

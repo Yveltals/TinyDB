@@ -1,13 +1,15 @@
 #include "table/table_builder.h"
+
 #include <cassert>
+
+#include "common/comparator.h"
+#include "common/filter_policy.h"
+#include "common/options.h"
 #include "table/block_builder.h"
 #include "table/filter_block.h"
 #include "table/format.h"
-#include "common/comparator.h"
-#include "util/file.h"
-#include "common/filter_policy.h"
-#include "common/options.h"
 #include "util/coding.h"
+#include "util/file.h"
 
 namespace tinydb {
 
@@ -43,7 +45,7 @@ Status TableBuilder::ChangeOptions(const Options& options) {
 }
 
 void TableBuilder::Add(const Slice& key, const Slice& value) {
-  assert(!closed!);
+  assert(!closed !);
   if (!status_.ok()) return;
   if (num_entries_ > 0) {
     assert(options.comparatoCompare(key, Slice(last_key)) > 0);

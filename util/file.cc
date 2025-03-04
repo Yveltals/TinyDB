@@ -1,13 +1,19 @@
 #include "util/file.h"
+
 #include <fcntl.h>
 #include <unistd.h>
+
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
+#include <iostream>
 #include <memory>
 #include <utility>
 
 namespace tinydb {
+
+namespace fs = std::filesystem;
 
 Status SequentialFile::Read(size_t n, Slice* result, char* buffer) {
   if (!file_.is_open()) {
@@ -67,19 +73,20 @@ Status RandomAccessFile::Read(uint64_t offset, size_t n, Slice* result,
   return Status::OK();
 }
 
-SequentialFile* File::NewSequentialFile(
-    const std::string& filename) {
+SequentialFile* File::NewSequentialFile(const std::string& filename) {
   return new SequentialFile(filename);
 }
 
-RandomAccessFile* File::NewRandomAccessFile(
-    const std::string& filename) {
+RandomAccessFile* File::NewRandomAccessFile(const std::string& filename) {
   return new RandomAccessFile(filename);
 }
 
-WritableFile* File::NewWritableFile(
-    const std::string& filename) {
-  return new WritableFile(filename);
+WritableFile* File::NewWritableFile(const std::string& filename) {
+  return new WritableFile(filename, false);
+}
+
+WritableFile* File::NewAppendableFile(const std::string& filename) {
+  return new WritableFile(filename, true);
 }
 
 Status File::RenameFile(const std::string& from, const std::string& to) {
@@ -96,9 +103,25 @@ Status File::RemoveFile(const std::string& filename) {
   return Status::OK();
 }
 
-Status WriteStringToFile(File* file, const Slice& data, const std::string& fname,
-                         bool sync) {
-  auto w_file = std::make_unique<WritableFile>(fname);
+Status GetChildren(const std::string& dir_path,
+                   std::vector<std::string>* result) {
+  result->clear();
+  if (fs::exists(dir_path) && fs::is_directory(dir_path)) {
+    for (const auto& entry : fs::directory_iterator(dir_path)) {
+      if (fs::is_regular_file(entry.status())) {
+        result->push_back(entry.path().filename().string());
+      }
+    }
+  } else {
+    std::cout << "Directory does not exist " << dir_path << std::endl;
+    return Status::IOError(dir_path, std::strerror(errno));
+  }
+  return Status::OK();
+}
+
+Status WriteStringToFile(File* file, const Slice& data,
+                         const std::string& fname, bool sync) {
+  auto w_file = std::make_unique<WritableFile>(fname, true);
   auto s = w_file->Append(data);
   if (s.ok() && sync) {
     s = w_file->Sync();
@@ -112,7 +135,8 @@ Status WriteStringToFile(File* file, const Slice& data, const std::string& fname
   return s;
 }
 
-Status ReadFileToString(File* file, const std::string& fname, std::string* data) {
+Status ReadFileToString(File* file, const std::string& fname,
+                        std::string* data) {
   Status s;
   data->clear();
   auto s_file = std::make_unique<SequentialFile>(fname);

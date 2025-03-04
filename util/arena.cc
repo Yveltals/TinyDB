@@ -46,4 +46,4 @@ char* Arena::AllocateNewBlock(size_t block_bytes) {
   return result;
 }
 
-}  // namespace tinydb
+} // namespace tinydb

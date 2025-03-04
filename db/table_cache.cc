@@ -1,4 +1,5 @@
 #include "db/table_cache.h"
+
 #include "util/coding.h"
 #include "util/filename.h"
 
@@ -32,7 +33,7 @@ Status TableCache::FindOrOpenTable(uint64_t file_number, uint64_t file_size,
   if (*handle == nullptr) {
     std::string fname = SSTTableFileName(dbname_, file_number);
     Table* table = nullptr;
-    auto file = env_->NewRandomAccessFile(fname);
+    auto file = file_->NewRandomAccessFile(fname);
     s = Table::Open(options_, file, file_size, &table);
     if (!s.ok()) {
       assert(table == nullptr);
@@ -86,4 +87,4 @@ void TableCache::Evict(uint64_t file_number) {
   cache_->Erase(Slice(buf, sizeof(buf)));
 }
 
-}  // namespace tinydb
+} // namespace tinydb
