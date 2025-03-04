@@ -16,8 +16,9 @@ using HandleResult = std::function<void(const Slice&, const Slice&)>;
 
 class Table {
  public:
-  static Status Open(const Options& options, RandomAccessFile* file,
-                     uint64_t file_size, Table** table);
+  static Status Open(const Options& options,
+                     std::unique_ptr<RandomAccessFile> file, uint64_t file_size,
+                     Table** table);
   Table(const Table&) = delete;
   Table& operator=(const Table&) = delete;
   ~Table() {
@@ -32,10 +33,10 @@ class Table {
  private:
   friend class TableCache;
 
-  Table(Options opt, RandomAccessFile* file, uint64_t cache_id,
+  Table(Options opt, std::unique_ptr<RandomAccessFile> file, uint64_t cache_id,
         Block* index_block)
       : options_(opt),
-        file_(file),
+        file_(std::move(file)),
         cache_id_(cache_id),
         filter_(nullptr),
         filter_data_(nullptr),
@@ -52,7 +53,7 @@ class Table {
 
   Options options_;
   Status status_;
-  RandomAccessFile* file_;
+  std::unique_ptr<RandomAccessFile> file_;
   uint64_t cache_id_;
   FilterBlockReader* filter_;
   const char* filter_data_;

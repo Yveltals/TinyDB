@@ -13,8 +13,9 @@
 
 namespace tinydb {
 
-Status Table::Open(const Options& options, RandomAccessFile* file,
-                   uint64_t size, Table** table) {
+Status Table::Open(const Options& options,
+                   std::unique_ptr<RandomAccessFile> file, uint64_t size,
+                   Table** table) {
   *table = nullptr;
   if (size < Footer::kEncodedLength) {
     return Status::Corruption("file is too short to be an sstable");
@@ -33,12 +34,12 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
   // Read the index block
   BlockContents index_block_contents;
   ReadOptions opt;
-  s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+  s = ReadBlock(file.get(), opt, footer.index_handle(), &index_block_contents);
 
   if (s.ok()) {
     auto cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
     auto index_block = new Block(index_block_contents);
-    *table = new Table(options, file, cache_id, index_block);
+    *table = new Table(options, std::move(file), cache_id, index_block);
     (*table)->ReadFilter(footer);
   }
   return s;
@@ -51,7 +52,7 @@ void Table::ReadFilter(const Footer& footer) {
   // Read the filter handle
   ReadOptions opt;
   BlockContents contents;
-  if (!ReadBlock(file_, opt, footer.filter_handle(), &contents).ok()) {
+  if (!ReadBlock(file_.get(), opt, footer.filter_handle(), &contents).ok()) {
     return;
   }
   BlockHandle filter_handle;
@@ -61,7 +62,7 @@ void Table::ReadFilter(const Footer& footer) {
   filter_offset_ = filter_handle.offset();
   // Read the filter block
   BlockContents block;
-  if (!ReadBlock(file_, opt, filter_handle, &block).ok()) {
+  if (!ReadBlock(file_.get(), opt, filter_handle, &block).ok()) {
     return;
   }
   if (block.heap_allocated) {
@@ -106,7 +107,7 @@ std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
       if (cache_handle) {
         block = std::any_cast<Block*>(block_cache->Value(cache_handle));
       } else {
-        st = ReadBlock(table->file_, options, handle, &contents);
+        st = ReadBlock(table->file_.get(), options, handle, &contents);
         if (st.ok()) {
           block = new Block(contents);
           if (contents.cachable && options.fill_cache) {
@@ -116,7 +117,7 @@ std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
         }
       }
     } else {
-      st = ReadBlock(table->file_, options, handle, &contents);
+      st = ReadBlock(table->file_.get(), options, handle, &contents);
       if (st.ok()) {
         block = new Block(contents);
       }

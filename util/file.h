@@ -26,10 +26,12 @@ class File {
   File& operator=(const File&) = delete;
   ~File();
 
-  SequentialFile* NewSequentialFile(const std::string& filename);
-  RandomAccessFile* NewRandomAccessFile(const std::string& filename);
-  WritableFile* NewWritableFile(const std::string& filename);
-  WritableFile* NewAppendableFile(const std::string& filename);
+  std::unique_ptr<SequentialFile> NewSequentialFile(
+      const std::string& filename);
+  std::unique_ptr<RandomAccessFile> NewRandomAccessFile(
+      const std::string& filename);
+  std::unique_ptr<WritableFile> NewWritableFile(const std::string& filename);
+  std::unique_ptr<WritableFile> NewAppendableFile(const std::string& filename);
 
   Status RenameFile(const std::string& from, const std::string& to);
   Status RemoveFile(const std::string& filename);

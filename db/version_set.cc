@@ -248,8 +248,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, std::mutex& mu) {
     // No reason to unlock *mu here since we only hit this path in the
     // first call to LogAndApply (when opening the database).
     new_manifest_file = DescriptorFileName(dbname_, manifest_file_number_);
-    std::unique_ptr<WritableFile> file(
-        file_->NewWritableFile(new_manifest_file));
+    auto file = file_->NewWritableFile(new_manifest_file);
     descriptor_log_ = std::make_unique<log::Writer>(std::move(file));
     s = WriteSnapshot(descriptor_log_.get());
   }
@@ -302,7 +301,7 @@ Status VersionSet::Recover(bool* save_manifest) {
   current.resize(current.size() - 1);
 
   std::string dscname = dbname_ + "/" + current;
-  std::unique_ptr<SequentialFile> file(file_->NewSequentialFile(dscname));
+  auto file = file_->NewSequentialFile(dscname);
   // TODO: check not found file
 
   bool have_log_number = false;
@@ -632,12 +631,12 @@ std::unique_ptr<Iterator> VersionSet::MakeInputIterator(Compaction* c) {
   return result;
 }
 
-Compaction* VersionSet::PickCompaction() {
+std::unique_ptr<Compaction> VersionSet::PickCompaction() {
   if (current_->compaction_score_ < 1) {
     return nullptr;
   }
   int level = current_->compaction_level_;
-  Compaction* c = new Compaction(options_, level);
+  auto c = std::make_unique<Compaction>(options_, level);
   c->input_version_ = current_;
   c->input_version_->Ref();
 
@@ -662,7 +661,7 @@ Compaction* VersionSet::PickCompaction() {
     assert(!c->inputs_[0].empty());
   }
 
-  SetupOtherInputs(c);
+  SetupOtherInputs(c.get());
   return c;
 }
 
@@ -681,40 +680,6 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
   InternalKey all_start, all_limit;
   GetRange2(c->inputs_[0], c->inputs_[1], &all_start, &all_limit);
 
-  // See if we can grow the number of inputs in "level" without
-  // changing the number of "level+1" files we pick up.
-  if (!c->inputs_[1].empty()) {
-    std::vector<FileMetaData*> expanded0;
-    current_->GetOverlappingInputs(level, &all_start, &all_limit, &expanded0);
-    AddBoundaryInputs(icmp_, current_->files_[level], &expanded0);
-    const int64_t inputs0_size = TotalFileSize(c->inputs_[0]);
-    const int64_t inputs1_size = TotalFileSize(c->inputs_[1]);
-    const int64_t expanded0_size = TotalFileSize(expanded0);
-    if (expanded0.size() > c->inputs_[0].size() &&
-        inputs1_size + expanded0_size <
-            ExpandedCompactionByteSizeLimit(options_)) {
-      InternalKey new_start, new_limit;
-      GetRange(expanded0, &new_start, &new_limit);
-      std::vector<FileMetaData*> expanded1;
-      current_->GetOverlappingInputs(level + 1, &new_start, &new_limit,
-                                     &expanded1);
-      AddBoundaryInputs(icmp_, current_->files_[level + 1], &expanded1);
-      if (expanded1.size() == c->inputs_[1].size()) {
-        smallest = new_start;
-        largest = new_limit;
-        c->inputs_[0] = expanded0;
-        c->inputs_[1] = expanded1;
-        GetRange2(c->inputs_[0], c->inputs_[1], &all_start, &all_limit);
-      }
-    }
-  }
-
-  // Compute the set of grandparent files that overlap this compaction
-  // (parent == level+1; grandparent == level+2)
-  if (level + 2 < config::kNumLevels) {
-    current_->GetOverlappingInputs(level + 2, &all_start, &all_limit,
-                                   &c->grandparents_);
-  }
   // Update the place where we will do the next compaction for this level
   compact_pointer_[level] = largest.Data().ToString();
   c->edit_.SetCompactPointer(level, largest);
@@ -749,10 +714,7 @@ void AddBoundaryInputs(const InternalKeyComparator& icmp,
 Compaction::Compaction(const Options* options, int level)
     : level_(level),
       max_output_file_size_(MaxFileSizeForLevel(options, level)),
-      input_version_(nullptr),
-      grandparent_index_(0),
-      seen_key_(false),
-      overlapped_bytes_(0) {
+      input_version_(nullptr) {
   for (int i = 0; i < config::kNumLevels; i++) {
     level_ptrs_[i] = 0;
   }
@@ -766,12 +728,7 @@ Compaction::~Compaction() {
 
 bool Compaction::IsTrivialMove() const {
   const VersionSet* vset = input_version_->vset_;
-  // Avoid a move if there is lots of overlapping grandparent data.
-  // Otherwise, the move could create a parent file that will require
-  // a very expensive merge later on.
-  return (num_input_files(0) == 1 && num_input_files(1) == 0 &&
-          TotalFileSize(grandparents_) <=
-              MaxGrandParentOverlapBytes(vset->options_));
+  return (num_input_files(0) == 1 && num_input_files(1) == 0);
 }
 
 void Compaction::AddInputDeletions(VersionEdit* edit) {
@@ -801,29 +758,6 @@ bool Compaction::IsBaseLevelForKey(const Slice& user_key) {
     }
   }
   return true;
-}
-
-bool Compaction::ShouldStopBefore(const Slice& internal_key) {
-  const VersionSet* vset = input_version_->vset_;
-  // Scan to find earliest grandparent file that contains key.
-  const InternalKeyComparator* icmp = &vset->icmp_;
-  while (grandparent_index_ < grandparents_.size() &&
-         icmp->Compare(internal_key,
-                       grandparents_[grandparent_index_]->largest.Data()) > 0) {
-    if (seen_key_) {
-      overlapped_bytes_ += grandparents_[grandparent_index_]->file_size;
-    }
-    grandparent_index_++;
-  }
-  seen_key_ = true;
-
-  if (overlapped_bytes_ > MaxGrandParentOverlapBytes(vset->options_)) {
-    // Too much overlap for current output; start new output
-    overlapped_bytes_ = 0;
-    return true;
-  } else {
-    return false;
-  }
 }
 
 void Compaction::ReleaseInputs() {

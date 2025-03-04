@@ -56,6 +56,7 @@ class DBImpl : public DB {
   // Errors are recorded in bg_error_.
   void CompactMemTable();
 
+  Status WriteLevel0Table(MemTable* mem, VersionEdit* edit, Version* base);
   Status MakeRoomForWrite(bool force /* compact even if there is room? */);
   void RecordBackgroundError(const Status& s);
   // TODO EXCLUSIVE_LOCKS_REQUIRED
@@ -63,9 +64,7 @@ class DBImpl : public DB {
   static void BGWork(void* db);
   void BackgroundCall();
   void BackgroundCompaction();
-  void CleanupCompaction(CompactionState* compact);
   Status DoCompactionWork(CompactionState* compact);
-
   Status OpenCompactionOutputFile(CompactionState* compact);
   Status FinishCompactionOutputFile(CompactionState* compact, Iterator* input);
   Status InstallCompactionResults(CompactionState* compact);
@@ -104,8 +103,7 @@ class DBImpl : public DB {
 
   VersionSet* const versions_ GUARDED_BY(mutex_);
 
-  // Set of table files to protect from deletion because they are
-  // part of ongoing compactions.
+  // Files to protect from deletion because they are ongoing compactions
   std::set<uint64_t> pending_outputs_ GUARDED_BY(mutex_);
 
   bool bg_compaction_scheduled_ GUARDED_BY(mutex_);

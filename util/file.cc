@@ -73,20 +73,24 @@ Status RandomAccessFile::Read(uint64_t offset, size_t n, Slice* result,
   return Status::OK();
 }
 
-SequentialFile* File::NewSequentialFile(const std::string& filename) {
-  return new SequentialFile(filename);
+std::unique_ptr<SequentialFile> File::NewSequentialFile(
+    const std::string& filename) {
+  return std::make_unique<SequentialFile>(filename);
 }
 
-RandomAccessFile* File::NewRandomAccessFile(const std::string& filename) {
-  return new RandomAccessFile(filename);
+std::unique_ptr<RandomAccessFile> File::NewRandomAccessFile(
+    const std::string& filename) {
+  return std::make_unique<RandomAccessFile>(filename);
 }
 
-WritableFile* File::NewWritableFile(const std::string& filename) {
-  return new WritableFile(filename, false);
+std::unique_ptr<WritableFile> File::NewWritableFile(
+    const std::string& filename) {
+  return std::make_unique<WritableFile>(filename, false);
 }
 
-WritableFile* File::NewAppendableFile(const std::string& filename) {
-  return new WritableFile(filename, true);
+std::unique_ptr<WritableFile> File::NewAppendableFile(
+    const std::string& filename) {
+  return std::make_unique<WritableFile>(filename, true);
 }
 
 Status File::RenameFile(const std::string& from, const std::string& to) {

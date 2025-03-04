@@ -46,19 +46,14 @@ class VersionSet {
   // REQUIRES: *mu is held on entry.
   // REQUIRES: no other thread concurrently calls LogAndApply()
   Status LogAndApply(VersionEdit* edit, std::mutex& mu);
-
   // Recover the last saved descriptor from persistent storage.
   Status Recover(bool* save_manifest);
-
   // Return the current version.
   Version* current() const { return current_; }
-
   // Return the current manifest file number
   uint64_t ManifestFileNumber() const { return manifest_file_number_; }
-
   // Allocate and return a new file number
   uint64_t NewFileNumber() { return next_file_number_++; }
-
   // Arrange to reuse "file_number" unless a newer file number has
   // already been allocated.
   // REQUIRES: "file_number" was returned by a call to NewFileNumber().
@@ -67,57 +62,41 @@ class VersionSet {
       next_file_number_ = file_number;
     }
   }
-
   // Return the number of Table files at the specified level.
   int NumLevelFiles(int level) const;
-
   // Return the combined file size of all files at the specified level.
   int64_t NumLevelBytes(int level) const;
-
   // Return the last sequence number.
   uint64_t LastSequence() const { return last_sequence_; }
-
   // Set the last sequence number to s.
   void SetLastSequence(uint64_t s) {
     assert(s >= last_sequence_);
     last_sequence_ = s;
   }
-
   // Mark the specified file number as used.
   void MarkFileNumberUsed(uint64_t number);
-
   // Return the current log file number.
   uint64_t LogNumber() const { return log_number_; }
-
   // Return the log file number for the log file that is currently
   // being compacted, or zero if there is no such log file.
   uint64_t PrevLogNumber() const { return prev_log_number_; }
-
   // Return the maximum overlapping data (in bytes) at next level for any
   // file at a level >= 1.
   int64_t MaxNextLevelOverlappingBytes();
-
   // Create an iterator that reads over the compaction inputs for "*c".
   // The caller should delete the iterator when no longer needed.
   std::unique_ptr<Iterator> MakeInputIterator(Compaction* c);
-
   // Add all files listed in any live version to *live.
   // May also mutate some internal state.
   void AddLiveFiles(std::set<uint64_t>* live);
-
   // Return the approximate offset in the database of the data for
   // "key" as of version "v".
   uint64_t ApproximateOffsetOf(Version* v, const InternalKey& key);
-
   // Return a human-readable short (single-line) summary of the number
   // of files per level.  Uses *scratch as backing store.
   std::string LevelSummary() const;
-
   bool NeedsCompaction() const { return current_->compaction_score_ >= 1; }
-
-  Compaction* PickCompaction();
-
-  void SetupOtherInputs(Compaction* c);
+  std::unique_ptr<Compaction> PickCompaction();
 
  private:
   class Builder;
@@ -130,7 +109,8 @@ class VersionSet {
   void GetRange2(const std::vector<FileMetaData*>& inputs1,
                  const std::vector<FileMetaData*>& inputs2,
                  InternalKey* smallest, InternalKey* largest);
-  // void SetupOtherInputs(Compaction* c);
+  // Select files in level[n+1] to compact
+  void SetupOtherInputs(Compaction* c);
   // Save current contents to *log
   Status WriteSnapshot(log::Writer* log);
   void AppendVersion(Version* v);
@@ -151,13 +131,14 @@ class VersionSet {
   std::list<Version*> versions_;
   Version* current_;
 
-  // Per-level key at which the next compaction at that level should start.
+  // Which key at that level should start compaction
   std::string compact_pointer_[config::kNumLevels];
 };
 
 // A Compaction encapsulates information about a compaction.
 class Compaction {
  public:
+  Compaction(const Options* options, int level);
   ~Compaction();
 
   // Return the level that is being compacted.  Inputs from "level"
@@ -189,10 +170,6 @@ class Compaction {
   // in levels greater than "level+1".
   bool IsBaseLevelForKey(const Slice& user_key);
 
-  // Returns true iff we should stop building the current output
-  // before processing "internal_key".
-  bool ShouldStopBefore(const Slice& internal_key);
-
   // Release the input version for the compaction, once the compaction
   // is successful.
   void ReleaseInputs();
@@ -201,8 +178,6 @@ class Compaction {
   friend class Version;
   friend class VersionSet;
 
-  Compaction(const Options* options, int level);
-
   int level_;
   uint64_t max_output_file_size_;
   Version* input_version_;
@@ -210,14 +185,6 @@ class Compaction {
 
   // Each compaction reads inputs from "level_" and "level_+1"
   std::vector<FileMetaData*> inputs_[2];
-
-  // State used to check for number of overlapping grandparent files
-  // (parent == level_ + 1, grandparent == level_ + 2)
-  std::vector<FileMetaData*> grandparents_;
-  size_t grandparent_index_; // Index in grandparent_starts_
-  bool seen_key_;            // Some output key has been seen
-  int64_t overlapped_bytes_; // Bytes of overlap between current output
-                             // and grandparent files
 
   // level_ptrs_ holds indices into input_version_->levels_: our state
   // is that we are positioned at one of the file ranges for each

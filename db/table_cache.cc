@@ -5,16 +5,9 @@
 
 namespace tinydb {
 
-// Handle in table cache
-struct TableAndFile {
-  RandomAccessFile* file;
-  Table* table;
-};
-
 static void DeleteEntry(const Slice& key, std::any value) {
-  auto tf = std::any_cast<TableAndFile>(value);
-  delete tf.table;
-  delete tf.file;
+  auto table = std::any_cast<Table*>(value);
+  delete table;
 }
 
 static void UnrefEntry(std::any arg1, std::any arg2) {
@@ -34,13 +27,9 @@ Status TableCache::FindOrOpenTable(uint64_t file_number, uint64_t file_size,
     std::string fname = SSTTableFileName(dbname_, file_number);
     Table* table = nullptr;
     auto file = file_->NewRandomAccessFile(fname);
-    s = Table::Open(options_, file, file_size, &table);
-    if (!s.ok()) {
-      assert(table == nullptr);
-      delete file;
-    } else {
-      TableAndFile tf{file, table};
-      *handle = cache_->Insert(key, tf, 1, &DeleteEntry);
+    s = Table::Open(options_, std::move(file), file_size, &table);
+    if (s.ok()) {
+      *handle = cache_->Insert(key, table, 1, &DeleteEntry);
     }
   }
   return s;
@@ -58,8 +47,7 @@ std::unique_ptr<Iterator> TableCache::NewIterator(const ReadOptions& options,
   if (!s.ok()) {
     return NewErrorIterator(s);
   }
-  auto table_file = std::any_cast<TableAndFile>(cache_->Value(handle));
-  auto table = table_file.table;
+  auto table = std::any_cast<Table*>(cache_->Value(handle));
   auto result = table->NewIterator(options);
   result->RegisterCleanup(&UnrefEntry, cache_, handle);
   if (tableptr != nullptr) {
@@ -74,8 +62,8 @@ Status TableCache::Get(const ReadOptions& options, uint64_t file_number,
   Cache::Handle* handle = nullptr;
   auto s = FindOrOpenTable(file_number, file_size, &handle);
   if (s.ok()) {
-    auto t = std::any_cast<TableAndFile>(cache_->Value(handle)).table;
-    s = t->InternalGet(options, key, handler);
+    auto table = std::any_cast<Table*>(cache_->Value(handle));
+    s = table->InternalGet(options, key, handler);
     cache_->Release(handle);
   }
   return s;

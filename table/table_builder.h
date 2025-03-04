@@ -13,7 +13,7 @@ namespace tinydb {
 
 class TableBuilder {
  public:
-  TableBuilder(const Options& opt, WritableFile* file);
+  TableBuilder(const Options& opt, std::unique_ptr<WritableFile> file);
   TableBuilder(const TableBuilder&) = delete;
   TableBuilder& operator=(const TableBuilder&) = delete;
   ~TableBuilder();
@@ -32,7 +32,7 @@ class TableBuilder {
 
   Options options_;
   Options index_block_options_;
-  WritableFile* file_;
+  std::unique_ptr<WritableFile> file_;
   uint64_t offset_;
   BlockBuilder data_block_;
   BlockBuilder index_block_;

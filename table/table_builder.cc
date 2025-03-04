@@ -13,10 +13,11 @@
 
 namespace tinydb {
 
-TableBuilder::TableBuilder(const Options& opt, WritableFile* file)
+TableBuilder::TableBuilder(const Options& opt,
+                           std::unique_ptr<WritableFile> file)
     : options_(opt),
       index_block_options_(opt),
-      file_(file),
+      file_(std::move(file)),
       offset_(0),
       data_block_(&options_),
       index_block_(&index_block_options_),
