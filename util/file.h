@@ -35,6 +35,9 @@ class File {
 
   Status RenameFile(const std::string& from, const std::string& to);
   Status RemoveFile(const std::string& filename);
+  Status CreateDir(const std::string& dirname);
+  Status RemoveDir(const std::string& dirname);
+  bool FileExists(const std::string& filename);
   Status GetChildren(const std::string& dir_path,
                      std::vector<std::string>* result);
 };

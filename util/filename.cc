@@ -4,7 +4,6 @@
 #include <cstdio>
 
 #include "db/dbformat.h"
-#include "log/logging.h"
 #include "util/file.h"
 
 namespace tinydb {
@@ -57,6 +56,31 @@ std::string InfoLogFileName(const std::string& dbname) {
 // Return the name of the old info log file for "dbname".
 std::string OldInfoLogFileName(const std::string& dbname) {
   return dbname + "/LOG.old";
+}
+
+bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
+  // Constants that will be optimized away.
+  constexpr const char kLastDigitOfMaxUint64 =
+      '0' + static_cast<char>(UINT64_MAX % 10);
+
+  uint64_t value = 0;
+  const uint8_t* start = reinterpret_cast<const uint8_t*>(in->data());
+  const uint8_t* end = start + in->size();
+  const uint8_t* current = start;
+  for (; current != end; ++current) {
+    const uint8_t ch = *current;
+    if (ch < '0' || ch > '9') break;
+    // Overflow check.
+    if (value > UINT64_MAX / 10 ||
+        (value == UINT64_MAX / 10 && ch > kLastDigitOfMaxUint64)) {
+      return false;
+    }
+    value = (value * 10) + (ch - '0');
+  }
+  *val = value;
+  const size_t digits_consumed = current - start;
+  in->remove_prefix(digits_consumed);
+  return digits_consumed != 0;
 }
 
 // Owned filenames have the form:

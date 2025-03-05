@@ -3,6 +3,7 @@
 
 #include "common/comparator.h"
 #include "common/filter_policy.h"
+#include "db/snapshot.h"
 #include "util/cache.h"
 #include "util/file.h"
 
@@ -27,6 +28,7 @@ struct ReadOptions {
   // Should the data read for this iteration be cached in memory?
   // Callers may wish to set this field to false for bulk scans.
   bool fill_cache = true;
+  const Snapshot* snapshot = nullptr;
 };
 
 struct WriteOptions {

@@ -37,7 +37,6 @@ target_sources(tinydb
   "iterator/iterator_two_level.cc"
   "log/log_reader.cc"
   "log/log_writer.cc"
-  "log/logging.cc"
   "table/block.cc"
   "table/block_builder.cc"
   "table/filter_block.cc"
@@ -117,7 +116,7 @@ if(TEST_BUILD)
   add_executable(test "")
   target_sources(test
     PRIVATE
-    "test.cc"
+    "test/test.cc"
   )
   target_include_directories(test
     PUBLIC

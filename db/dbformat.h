@@ -6,7 +6,6 @@
 #include "common/comparator.h"
 #include "common/filter_policy.h"
 #include "common/slice.h"
-#include "log/logging.h"
 #include "util/coding.h"
 
 namespace tinydb {

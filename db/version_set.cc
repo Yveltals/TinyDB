@@ -12,7 +12,6 @@
 #include "iterator/iterator_two_level.h"
 #include "log/log_reader.h"
 #include "log/log_writer.h"
-#include "log/logging.h"
 #include "table/table_builder.h"
 #include "util/coding.h"
 #include "util/file.h"

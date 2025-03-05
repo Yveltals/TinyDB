@@ -15,7 +15,7 @@ class Iterator {
   Iterator& operator=(const Iterator&) = delete;
   virtual ~Iterator() {
     for (auto it = cleanup_list_.begin(); it != cleanup_list_.end();) {
-      it->fun(it->arg1, it->arg2);
+      (*it)();
       it = cleanup_list_.erase(it);
     }
   }
@@ -30,20 +30,12 @@ class Iterator {
   virtual Slice value() const = 0;
   virtual Status status() const = 0;
 
-  using CleanupFun = std::function<void(std::any, std::any)>;
-  void RegisterCleanup(CleanupFun func, std::any arg1, std::any arg2) {
-    cleanup_list_.emplace_back(func, arg1, arg2);
+  void RegisterCleanup(std::function<void()> func) {
+    cleanup_list_.emplace_back(func);
   }
 
  private:
-  struct CleanupNode {
-    CleanupNode(CleanupFun f, std::any a, std::any b)
-        : fun(std::move(f)), arg1(a), arg2(b) {}
-    CleanupFun fun;
-    std::any arg1;
-    std::any arg2;
-  };
-  std::list<CleanupNode> cleanup_list_;
+  std::list<std::function<void()>> cleanup_list_;
 };
 
 } // namespace tinydb

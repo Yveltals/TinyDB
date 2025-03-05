@@ -4,6 +4,7 @@
 
 #include "common/iterator.h"
 #include "common/options.h"
+#include "db/snapshot.h"
 #include "db/write_batch.h"
 
 namespace tinydb {
@@ -19,7 +20,7 @@ class DB {
   DB() = default;
   DB(const DB&) = delete;
   DB& operator=(const DB&) = delete;
-  virtual ~DB();
+  virtual ~DB() = default;
 
   virtual Status Put(const WriteOptions& options, const Slice& key,
                      const Slice& value) = 0;
@@ -28,6 +29,8 @@ class DB {
   virtual Status Get(const ReadOptions& options, const Slice& key,
                      std::string* value) = 0;
   virtual std::unique_ptr<Iterator> NewIterator(const ReadOptions& options) = 0;
+  virtual const Snapshot* GetSnapshot() = 0;
+  virtual void ReleaseSnapshot(const Snapshot* snapshot) = 0;
   virtual bool GetProperty(const Slice& property, std::string* value) = 0;
   virtual void GetApproximateSizes(const Slice& start, const Slice& limit,
                                    int n, uint64_t* sizes) = 0;

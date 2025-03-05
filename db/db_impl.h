@@ -8,7 +8,6 @@
 #include "db/db.h"
 #include "db/dbformat.h"
 #include "db/memtable.h"
-#include "db/snapshot.h"
 #include "db/table_cache.h"
 #include "db/version_set.h"
 #include "log/log_writer.h"
@@ -32,37 +31,37 @@ class DBImpl : public DB {
   Status Get(const ReadOptions& options, const Slice& key,
              std::string* value) override;
   std::unique_ptr<Iterator> NewIterator(const ReadOptions&) override;
+  const Snapshot* GetSnapshot() override;
+  void ReleaseSnapshot(const Snapshot* snapshot) override;
   bool GetProperty(const Slice& property, std::string* value) override;
   void GetApproximateSizes(const Slice& start, const Slice& limit, int n,
                            uint64_t* sizes) override;
   void CompactRange(const Slice* begin, const Slice* end) override;
-
-  void RecordReadSaples(Slice key);
 
  private:
   friend class DB;
   struct CompactionState;
   struct Writer;
 
-  std::unique_ptr<Iterator> NewInternalIterator(const ReadOptions&,
-                                                SequenceNumber* latest_snapshot,
-                                                uint32_t* seed);
+  std::unique_ptr<Iterator> NewInternalIterator(
+      const ReadOptions&, SequenceNumber* latest_snapshot);
 
   Status NewDB();
+  Status Recover(VersionEdit* edit, bool* save_manifest);
   // Delete any unneeded files and stale in-memory entries.
   void RemoveObsoleteFiles();
   // Compact the in-memory write buffer to disk.  Switches to a new
   // log-file/memtable and writes a new descriptor iff successful.
   // Errors are recorded in bg_error_.
   void CompactMemTable();
-
+  Status RecoverLogFile(uint64_t log_number, bool last_log, bool* save_manifest,
+                        VersionEdit* edit, SequenceNumber* max_sequence);
   Status WriteLevel0Table(MemTable* mem, VersionEdit* edit, Version* base);
   Status MakeRoomForWrite(bool force /* compact even if there is room? */);
+  WriteBatch* BuildBatchGroup(Writer** last_writer);
   void RecordBackgroundError(const Status& s);
   // TODO EXCLUSIVE_LOCKS_REQUIRED
   void MaybeScheduleCompaction();
-  static void BGWork(void* db);
-  void BackgroundCall();
   void BackgroundCompaction();
   Status DoCompactionWork(CompactionState* compact);
   Status OpenCompactionOutputFile(CompactionState* compact);
@@ -90,11 +89,8 @@ class DBImpl : public DB {
   MemTable* mem_;
   MemTable* imm_ GUARDED_BY(mutex_); // Memtable being compacted
   std::atomic<bool> has_imm_;        // So bg thread can detect non-null imm_
-  // WritableFile* logfile_;
   std::unique_ptr<log::Writer> log_;
   uint64_t logfile_number_ GUARDED_BY(mutex_);
-  uint32_t seed_ GUARDED_BY(mutex_);
-
   // Queue of writers
   std::deque<Writer*> writers_ GUARDED_BY(mutex_);
   WriteBatch* tmp_batch_ GUARDED_BY(mutex_);
@@ -107,18 +103,9 @@ class DBImpl : public DB {
   std::set<uint64_t> pending_outputs_ GUARDED_BY(mutex_);
 
   bool bg_compaction_scheduled_ GUARDED_BY(mutex_);
-
-  // Have we encountered a background error in paranoid mode?
   Status bg_error_ GUARDED_BY(mutex_);
 
   ThreadPool pool_;
 };
-
-// Sanitize db options.  The caller should delete result.info_log if
-// it is not equal to src.info_log.
-Options SanitizeOptions(const std::string& db,
-                        const InternalKeyComparator* icmp,
-                        const InternalFilterPolicy* ipolicy,
-                        const Options& src);
 
 } // namespace tinydb

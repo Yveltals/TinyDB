@@ -1,5 +1,7 @@
 #include "db/version.h"
 
+#include <fmt/core.h>
+
 #include "db/table_cache.h"
 #include "db/version_set.h"
 #include "iterator/iterator_level_files.h"
@@ -285,19 +287,11 @@ std::string Version::DebugString() const {
     //   --- level 1 ---
     //   17:123['a' .. 'd']
     //   20:43['e' .. 'g']
-    r.append("--- level ");
-    AppendNumberTo(&r, level);
-    r.append(" ---\n");
+    r = fmt::format("--- level {} ---\n", level);
     for (auto file : files_[level]) {
-      r.push_back(' ');
-      AppendNumberTo(&r, file->number);
-      r.push_back(':');
-      AppendNumberTo(&r, file->file_size);
-      r.append("[");
-      r.append(file->smallest.DebugString());
-      r.append(" .. ");
-      r.append(file->largest.DebugString());
-      r.append("]\n");
+      r = fmt::format("{} {}:{} [{} .. {}]\n", r, file->number, file->file_size,
+                      file->smallest.DebugString(),
+                      file->largest.DebugString());
     }
   }
   return r;

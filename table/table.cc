@@ -71,18 +71,8 @@ void Table::ReadFilter(const Footer& footer) {
   filter_ = new FilterBlockReader(options_.filter_policy, block.data);
 }
 
-static void DeleteBlock(std::any arg, std::any ignored) {
-  delete std::any_cast<Block*>(arg);
-}
-
 static void DeleteCachedBlock(const Slice& key, std::any value) {
   delete std::any_cast<Block*>(value);
-}
-
-static void ReleaseBlock(std::any arg, std::any h) {
-  auto cache = std::any_cast<Cache*>(arg);
-  auto handle = std::any_cast<Cache::Handle*>(h);
-  cache->Release(handle);
 }
 
 // Read data block (maybe from cache), return IteratorBlock to seek keys
@@ -129,10 +119,10 @@ std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
   }
   auto iter = block->NewIterator(table->options_.comparator);
   if (!cache_handle) {
-    iter->RegisterCleanup(&DeleteBlock, std::any(block), std::any{});
+    iter->RegisterCleanup([block] { delete block; });
   } else {
-    iter->RegisterCleanup(&ReleaseBlock, std::any(block_cache),
-                          std::any(cache_handle));
+    iter->RegisterCleanup(
+        [block_cache, cache_handle] { block_cache->Release(cache_handle); });
   }
   return iter;
 }

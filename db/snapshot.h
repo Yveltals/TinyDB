@@ -1,5 +1,6 @@
 #pragma once
-#include "db/db.h"
+#include <list>
+
 #include "db/dbformat.h"
 
 namespace tinydb {
@@ -32,7 +33,13 @@ class SnapshotList {
     return snapshot;
   }
   void Delete(const Snapshot* snapshot) {
-    // TODO
+    for (auto it = snapshots_.begin(); it != snapshots_.end();) {
+      if (*it == snapshot) {
+        it = snapshots_.erase(it);
+      } else {
+        ++it;
+      }
+    }
   }
 
  private:

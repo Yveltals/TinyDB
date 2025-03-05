@@ -1,5 +1,7 @@
 #include "db/version_edit.h"
 
+#include <fmt/core.h>
+
 #include "util/coding.h"
 
 namespace tinydb {
@@ -206,47 +208,32 @@ std::string VersionEdit::DebugString() const {
     r.append(comparator_);
   }
   if (has_log_number_) {
-    r.append("\n  LogNumber: ");
-    AppendNumberTo(&r, log_number_);
+    r = fmt::format("{}\n  LogNumber: {}", r, log_number_);
   }
   if (has_prev_log_number_) {
-    r.append("\n  PrevLogNumber: ");
-    AppendNumberTo(&r, prev_log_number_);
+    r = fmt::format("{}\n  PrevLogNumber: {}", r, prev_log_number_);
   }
   if (has_next_file_number_) {
-    r.append("\n  NextFile: ");
-    AppendNumberTo(&r, next_file_number_);
+    r = fmt::format("{}\n  NextFile: {}", r, next_file_number_);
   }
   if (has_last_sequence_) {
-    r.append("\n  LastSeq: ");
-    AppendNumberTo(&r, last_sequence_);
+    r = fmt::format("{}\n  LastSeq: {}", r, last_sequence_);
   }
   for (size_t i = 0; i < compact_pointers_.size(); i++) {
-    r.append("\n  CompactPointer: ");
-    AppendNumberTo(&r, compact_pointers_[i].first);
-    r.append(" ");
-    r.append(compact_pointers_[i].second.DebugString());
+    r = fmt::format("{}\n  CompactPointer: {} {}", r,
+                    compact_pointers_[i].first,
+                    compact_pointers_[i].second.DebugString());
   }
   for (const auto& deleted_files_kvp : deleted_files_) {
-    r.append("\n  RemoveFile: ");
-    AppendNumberTo(&r, deleted_files_kvp.first);
-    r.append(" ");
-    AppendNumberTo(&r, deleted_files_kvp.second);
+    r = fmt::format("{}\n  RemoveFile: {} {}", r, deleted_files_kvp.first,
+                    deleted_files_kvp.second);
   }
   for (size_t i = 0; i < new_files_.size(); i++) {
     const FileMetaData& f = new_files_[i].second;
-    r.append("\n  AddFile: ");
-    AppendNumberTo(&r, new_files_[i].first);
-    r.append(" ");
-    AppendNumberTo(&r, f.number);
-    r.append(" ");
-    AppendNumberTo(&r, f.file_size);
-    r.append(" ");
-    r.append(f.smallest.DebugString());
-    r.append(" .. ");
-    r.append(f.largest.DebugString());
+    r = fmt::format("{}\n  AddFile: {} {} {} {} .. {}\n}\n", r,
+                    new_files_[i].first, f.number, f.file_size,
+                    f.smallest.DebugString(), f.largest.DebugString());
   }
-  r.append("\n}\n");
   return r;
 }
 

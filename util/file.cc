@@ -109,6 +109,28 @@ Status File::RemoveFile(const std::string& filename) {
   return Status::OK();
 }
 
+Status CreateDir(const std::string& dirname) {
+  if (!fs::exists(dirname)) {
+    if (!fs::create_directory(dirname)) {
+      Logger::Log("Failed to create directory: {}", dirname);
+    }
+  } else {
+    Logger::Log("Directory already exists: {}", dirname);
+  }
+  return Status::OK();
+}
+
+Status RemoveDir(const std::string& dirname) {
+  if (fs::exists(dirname)) {
+    fs::remove_all(dirname);
+  }
+  return Status::OK();
+}
+
+bool FileExists(const std::string& filename) {
+  return fs::exists(filename) && fs::is_regular_file(filename);
+}
+
 Status GetChildren(const std::string& dir_path,
                    std::vector<std::string>* result) {
   result->clear();

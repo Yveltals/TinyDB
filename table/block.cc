@@ -6,7 +6,6 @@
 
 #include "common/comparator.h"
 #include "iterator/iterator_block.h"
-#include "log/logging.h"
 #include "util/coding.h"
 
 namespace tinydb {

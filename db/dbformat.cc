@@ -1,9 +1,26 @@
 #include "db/dbformat.h"
+
+#include <fmt/core.h>
+
 #include <cstdio>
 #include <sstream>
+
 #include "util/coding.h"
 
 namespace tinydb {
+
+static std::string EscapeString(const std::string& str) {
+  std::string result;
+  for (char c : str) {
+    if (std::isprint(c)) {
+      result += c;
+    } else {
+      result =
+          fmt::format("{}\\x{:02X}", result, static_cast<unsigned char>(c));
+    }
+  }
+  return result;
+}
 
 std::string InternalKey::DebugString() const {
   std::ostringstream ss;
@@ -53,7 +70,7 @@ bool InternalFilterPolicy::KeyMayMatch(const Slice& key, const Slice& f) const {
 
 LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {
   size_t usize = user_key.size();
-  size_t needed = usize + 13;  // A conservative estimate
+  size_t needed = usize + 13; // A conservative estimate
   char* dst = new char[needed];
   start_ = dst;
   dst = EncodeVarint32(dst, usize + 8);

@@ -10,12 +10,6 @@ static void DeleteEntry(const Slice& key, std::any value) {
   delete table;
 }
 
-static void UnrefEntry(std::any arg1, std::any arg2) {
-  auto cache = std::any_cast<Cache*>(arg1);
-  auto h = std::any_cast<Cache::Handle*>(arg2);
-  cache->Release(h);
-}
-
 Status TableCache::FindOrOpenTable(uint64_t file_number, uint64_t file_size,
                                    Cache::Handle** handle) {
   Status s;
@@ -49,7 +43,8 @@ std::unique_ptr<Iterator> TableCache::NewIterator(const ReadOptions& options,
   }
   auto table = std::any_cast<Table*>(cache_->Value(handle));
   auto result = table->NewIterator(options);
-  result->RegisterCleanup(&UnrefEntry, cache_, handle);
+
+  result->RegisterCleanup([this, handle]() { this->cache_->Release(handle); });
   if (tableptr != nullptr) {
     *tableptr = table;
   }
