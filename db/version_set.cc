@@ -267,7 +267,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, std::mutex& mu) {
         s = SetCurrentFile(file_, dbname_, manifest_file_number_);
       }
     } else {
-      std::cout << "MANIFEST write: %s\n" << s.ToString() << std::endl;
+      Logger::Log("MANIFEST write: %s", s.ToString());
     }
     mu.lock();
   }
@@ -381,8 +381,8 @@ Status VersionSet::Recover(bool* save_manifest) {
     prev_log_number_ = prev_log_number;
     *save_manifest = true;
   } else {
-    std::cout << "Error recovering version set with" << read_records
-              << "records:" << s.ToString();
+    Logger::Log("Error recovering version set with {} records: {}",
+                read_records, s.ToString());
   }
   return s;
 }

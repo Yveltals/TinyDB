@@ -7,9 +7,6 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_EXTENSIONS OFF)
 endif(NOT CMAKE_CXX_STANDARD)
 
-include(CheckLibraryExists)
-check_library_exists(tcmalloc malloc "" HAVE_TCMALLOC)
-
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-Wthread-safety HAVE_CLANG_THREAD_SAFETY)
 
@@ -20,81 +17,50 @@ include_directories(
   "."
 )
 
+add_subdirectory("third_party/fmt")
+
 # ###########################################################
 # TinyDB
 # ###########################################################
 add_library(tinydb "")
 target_sources(tinydb
   PRIVATE
-  "common/comparator.h"
-  "common/filter_policy.h"
-  "common/iterator.h"
-  "common/options.h"
-  "common/slice.h"
-  "common/status.h"
   "common/status.cc"
-  "db/db.h"
-  "db/db_impl.h"
   "db/db_impl.cc"
-  "db/dbformat.h"
   "db/dbformat.cc"
-  "util/filename.h"
-  "util/filename.cc"
-  "log/log_reader.h"
-  "log/log_reader.cc"
-  "log/log_writer.h"
-  "log/log_writer.cc"
-  "db/memtable.h"
   "db/memtable.cc"
-  "db/skiplist.h"
-  "db/snapshot.h"
-  "db/table_cache.h"
   "db/table_cache.cc"
-  "db/version_edit.h"
   "db/version_edit.cc"
-  "db/version_set.h"
   "db/version_set.cc"
-  "db/write_batch.h"
   "db/write_batch.cc"
-  "table/block_builder.h"
-  "table/block_builder.cc"
-  "table/block.h"
-  "table/block.cc"
-  "table/filter_block.h"
-  "table/filter_block.cc"
-  "table/format.h"
-  "table/format.cc"
-  "table/table.h"
-  "table/table.cc"
-  "table/table_builder.h"
-  "table/table_builder.cc"
-  "iterator/iterator_base.h"
-  "iterator/iterator_block.h"
-  "iterator/iterator_level_files.h"
-  "iterator/iterator_merger.h"
   "iterator/iterator_merger.cc"
-  "iterator/iterator_two_level.h"
   "iterator/iterator_two_level.cc"
-  "util/arena.cc"
-  "util/arena.h"
-  "util/bloom.cc"
-  "util/cache.h"
-  "util/cache.cc"
-  "util/coding.h"
-  "util/coding.cc"
-  "util/file.h"
-  "util/file.cc"
-  "util/thread_pool.h"
-  "util/hash.h"
-  "util/hash.cc"
-  "log/logging.h"
+  "log/log_reader.cc"
+  "log/log_writer.cc"
   "log/logging.cc"
+  "table/block.cc"
+  "table/block_builder.cc"
+  "table/filter_block.cc"
+  "table/format.cc"
+  "table/table.cc"
+  "table/table_builder.cc"
+  "util/arena.cc"
+  "util/bloom.cc"
+  "util/cache.cc"
+  "util/coding.cc"
+  "util/file.cc"
+  "util/filename.cc"
+  "util/hash.cc"
 )
 
 target_include_directories(tinydb
   PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  "${PROJECT_SOURCE_DIR}/common"
+  "${PROJECT_SOURCE_DIR}/db"
+  "${PROJECT_SOURCE_DIR}/iterator"
+  "${PROJECT_SOURCE_DIR}/log"
+  "${PROJECT_SOURCE_DIR}/table"
+  "${PROJECT_SOURCE_DIR}/util"
 )
 
 set_target_properties(tinydb
@@ -106,9 +72,7 @@ if(HAVE_CLANG_THREAD_SAFETY)
     -Werror -Wthread-safety)
 endif(HAVE_CLANG_THREAD_SAFETY)
 
-if(HAVE_TCMALLOC)
-  target_link_libraries(tinydb tcmalloc)
-endif(HAVE_TCMALLOC)
+target_link_libraries(tinydb PRIVATE fmt::fmt)
 
 # ###########################################################
 # Gtest
@@ -143,3 +107,21 @@ if(TINYDB_BUILD_TESTS)
   target_link_libraries(tinydb_tests tinydb gmock gtest gtest_main)
   add_test(NAME "tinydb_tests" COMMAND "tinydb_tests")
 endif(TINYDB_BUILD_TESTS)
+
+# ###########################################################
+# Only For Test
+# ###########################################################
+option(TEST_BUILD "Build test for debug" OFF)
+
+if(TEST_BUILD)
+  add_executable(test "")
+  target_sources(test
+    PRIVATE
+    "test.cc"
+  )
+  target_include_directories(test
+    PUBLIC
+    "${PROJECT_SOURCE_DIR}/log"
+  )
+  target_link_libraries(test fmt::fmt)
+endif(TEST_BUILD)

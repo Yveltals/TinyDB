@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <iostream>
 
+#include "log/logger.h"
 #include "util/file.h"
 
 namespace tinydb {
@@ -15,7 +16,7 @@ bool Reader::ReadRecord(Slice* record) {
 
   auto handle_err = [&](Status& st) {
     buffer_.clear();
-    std::cout << st.ToString() << std::endl;
+    Logger::Log(st.ToString());
   };
   // read pre_length
   Status st = file_->Read(kHeaderSize, &buffer_, backing_store_);

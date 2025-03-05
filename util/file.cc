@@ -11,6 +11,8 @@
 #include <memory>
 #include <utility>
 
+#include "log/logger.h"
+
 namespace tinydb {
 
 namespace fs = std::filesystem;
@@ -117,7 +119,7 @@ Status GetChildren(const std::string& dir_path,
       }
     }
   } else {
-    std::cout << "Directory does not exist " << dir_path << std::endl;
+    Logger::Log("Directory {} does not exist", dir_path);
     return Status::IOError(dir_path, std::strerror(errno));
   }
   return Status::OK();

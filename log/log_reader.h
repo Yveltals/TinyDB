@@ -3,6 +3,7 @@
 
 #include "common/slice.h"
 #include "common/status.h"
+#include "log/logger.h"
 #include "util/file.h"
 
 namespace tinydb {

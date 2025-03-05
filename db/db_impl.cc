@@ -1,5 +1,7 @@
 #include "db/db_impl.h"
 
+#include <fmt/core.h>
+
 #include <algorithm>
 #include <atomic>
 #include <condition_variable>
@@ -176,7 +178,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   meta.number = versions_->NewFileNumber();
   pending_outputs_.insert(meta.number);
   auto iter = mem->NewIterator();
-  std::cout << "Level-0 table #" << meta.number << ": started" << std::endl;
+  Logger::Log("Level-0 table {} started", meta.number);
 
   Status s;
   {
@@ -186,10 +188,8 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   }
   pending_outputs_.erase(meta.number);
 
-  // Log(options_.info_log, "Level-0 table #%llu: %lld bytes %s",
-  //     (unsigned long long)meta.number, (unsigned long long)meta.file_size,
-  //     s.ToString().c_str());
-
+  Logger::Log("Level-0 table {}: {} bytes {}", meta.number, meta.file_size,
+              s.ToString());
   // Note that if file_size is zero, the file has been deleted and
   // should not be added to the manifest.
   int level = 0;
@@ -292,10 +292,9 @@ void DBImpl::BackgroundCompaction() {
     if (!status.ok()) {
       RecordBackgroundError(status);
     }
-    // Log(options_.info_log, "Moved #%lld to level-%d %lld bytes %s: %s\n",
-    //     static_cast<unsigned long long>(f->number), c->level() + 1,
-    //     static_cast<unsigned long long>(f->file_size),
-    //     status.ToString().c_str(), versions_->LevelSummary());
+    Logger::Log("Moved {} to level-{} {} bytes {}: {}", f->number,
+                c->level() + 1, f->file_size, status.ToString(),
+                versions_->LevelSummary());
   } else {
     auto compact = std::make_unique<CompactionState>(std::move(c));
     status = DoCompactionWork(compact.get());
@@ -313,7 +312,7 @@ void DBImpl::BackgroundCompaction() {
   } else if (shutting_down_.load(std::memory_order_acquire)) {
     // Ignore compaction errors found during shutting down
   } else {
-    std::cout << "Compaction error: " << status.ToString() << std::endl;
+    Logger::Log("Compaction error: {}", status.ToString());
   }
 }
 
@@ -364,8 +363,8 @@ void DBImpl::RemoveObsoleteFiles() {
         if (type == kTableFile) {
           table_cache_->Evict(number);
         }
-        std::cout << "Delete type=" << static_cast<int>(type) << " #" << number
-                  << std::endl;
+        Logger::Log("Delete type={}, file number={}", static_cast<int>(type),
+                    number);
       }
     }
   }
@@ -488,7 +487,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   if (!status.ok()) {
     RecordBackgroundError(status);
   }
-  std::cout << "compacted to: " << versions_->LevelSummary();
+  Logger::Log("compacted to: {}", versions_->LevelSummary());
   return status;
 }
 
@@ -514,12 +513,12 @@ Status DBImpl::MakeRoomForWrite(bool force) {
       break;
     } else if (imm_ != nullptr) {
       // The memtable one is still being compacted
-      std::cout << "Current memtable full; waiting..." << std::endl;
+      Logger::Log("Current memtable full; waiting...");
       // TODO condition_variable
       std::this_thread::sleep_for(std::chrono::microseconds(1000));
     } else if (versions_->NumLevelFiles(0) >= config::kL0_StopWritesTrigger) {
       // There are too many level-0 files
-      std::cout << "Too many L0 files; waiting..." << std::endl;
+      Logger::Log("Too many L0 files; waiting...");
       std::this_thread::sleep_for(std::chrono::microseconds(1000));
     } else {
       // Attempt to switch to a new memtable and trigger compaction
@@ -591,11 +590,9 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
       auto iter = table_cache_->NewIterator(ReadOptions(), output_number,
                                             current_bytes);
       if (iter->status().ok()) {
-        // Log(options_.info_log, "Generated table #%llu@%d: %lld keys, %lld
-        // bytes",
-        //     (unsigned long long)output_number, compact->compaction->level(),
-        //     (unsigned long long)current_entries,
-        //     (unsigned long long)current_bytes);
+        Logger::Log("Generated table {}@{}: {} keys, {} bytes ", output_number,
+                    compact->compaction->level(), current_entries,
+                    current_bytes);
       }
     }
   }
@@ -604,10 +601,11 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
 
 Status DBImpl::InstallCompactionResults(CompactionState* compact) {
   // mutex_.AssertHeld();
-  // Log(options_.info_log, "Compacted %d@%d + %d@%d files => %lld bytes",
-  //     compact->compaction->num_input_files(0), compact->compaction->level(),
-  //     compact->compaction->num_input_files(1), compact->compaction->level() +
-  //     1, static_cast<long long>(compact->total_bytes));
+  Logger::Log("Compacted {}@{} + {}@{} files => {} bytes",
+              compact->compaction->num_input_files(0),
+              compact->compaction->level(),
+              compact->compaction->num_input_files(1),
+              compact->compaction->level() + 1, compact->total_bytes);
 
   // Add compaction outputs
   compact->compaction->AddInputDeletions(compact->compaction->edit());
