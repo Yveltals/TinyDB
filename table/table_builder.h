@@ -18,13 +18,12 @@ class TableBuilder {
   TableBuilder& operator=(const TableBuilder&) = delete;
   ~TableBuilder();
 
-  Status ChangeOptions(const Options& options);
   void Add(const Slice& key, const Slice& value);
   void Flush();
   Status Finish();
-  void Abandon();
-  uint64_t NumEntries() const;
-  uint64_t FileSize() const;
+  void Abandon() { closed_ = true; }
+  uint64_t NumEntries() const { return num_entries_; }
+  uint64_t FileSize() const { return offset_; }
 
  private:
   void WriteBlock(BlockBuilder* block, BlockHandle* handle);
@@ -44,7 +43,8 @@ class TableBuilder {
   bool closed_;
   // Should add index for current key? Only when a new data block created
   bool pending_index_entry_;
-  BlockHandle data_block_handle_; // Current pended data block
+  // Current pended data block
+  BlockHandle data_block_handle_;
 };
 
 } // namespace tinydb

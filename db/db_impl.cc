@@ -678,7 +678,7 @@ std::unique_ptr<Iterator> DBImpl::NewInternalIterator(
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,
                    std::string* value) {
   Status s;
-  std::unique_ptr<std::mutex> lock(&mutex_);
+  std::unique_lock<std::mutex> lock(mutex_);
   SequenceNumber snapshot;
   if (options.snapshot) {
     snapshot = options.snapshot->sequence_number();

@@ -14,21 +14,16 @@ extern const int kHeaderSize;
 class Reader {
  public:
   Reader(std::unique_ptr<SequentialFile> file)
-      : file_(std::move(file)),
-        backing_store_(new char[4096]),
-        buffer_(),
-        eof_(false) {}
+      : file_(std::move(file)), buffer_(new char[4096]) {}
   Reader(const Reader&) = delete;
   Reader& operator=(const Reader&) = delete;
-  ~Reader() { delete[] backing_store_; }
+  ~Reader() = default;
 
   bool ReadRecord(Slice* record);
 
  private:
   std::unique_ptr<SequentialFile> file_;
-  char* const backing_store_;
-  Slice buffer_;
-  bool eof_; // XXX
+  std::unique_ptr<char[]> buffer_;
 };
 
 } // namespace log

@@ -37,16 +37,8 @@ TableBuilder::~TableBuilder() {
   delete filter_block_;
 }
 
-Status TableBuilder::ChangeOptions(const Options& options) {
-  // Note that any live BlockBuilders point to rep_->options and therefore
-  // will automatically pick up the updated options.
-  options_ = options;
-  index_block_options_ = options;
-  return Status::OK();
-}
-
 void TableBuilder::Add(const Slice& key, const Slice& value) {
-  assert(!closed !);
+  assert(!closed);
   if (!status_.ok()) return;
   if (num_entries_ > 0) {
     assert(options.comparatoCompare(key, Slice(last_key)) > 0);
@@ -140,14 +132,5 @@ Status TableBuilder::Finish() {
   }
   return status_;
 }
-
-void TableBuilder::Abandon() {
-  assert(!closed_);
-  closed_ = true;
-}
-
-uint64_t TableBuilder::NumEntries() const { return num_entries_; }
-
-uint64_t TableBuilder::FileSize() const { return offset_; }
 
 } // namespace tinydb

@@ -14,15 +14,15 @@ class BlockBuilder {
   BlockBuilder(const BlockBuilder&) = delete;
   BlockBuilder& operator=(const BlockBuilder&) = delete;
 
-  void Reset();
-
-  // REQUIRES: key is larget than any previously added key
+  // Key must larger than previously added key
   void Add(const Slice& key, const Slice& value);
 
   // Finish building the block and return a slice
   Slice Finish();
 
-  size_t CurrentSizeEstimate() const;
+  void Reset();
+
+  size_t CurrentSizeEstimate() const { return buffer_.size(); }
 
   bool empty() const { return buffer_.empty(); }
 

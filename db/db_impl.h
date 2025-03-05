@@ -87,23 +87,23 @@ class DBImpl : public DB {
   std::atomic<bool> shutting_down_;
   std::condition_variable bg_work_finished_signal_;
   MemTable* mem_;
-  MemTable* imm_ GUARDED_BY(mutex_); // Memtable being compacted
-  std::atomic<bool> has_imm_;        // So bg thread can detect non-null imm_
+  MemTable* imm_;             // Memtable being compacted
+  std::atomic<bool> has_imm_; // So bg thread can detect non-null imm_
   std::unique_ptr<log::Writer> log_;
-  uint64_t logfile_number_ GUARDED_BY(mutex_);
+  uint64_t logfile_number_;
   // Queue of writers
-  std::deque<Writer*> writers_ GUARDED_BY(mutex_);
-  WriteBatch* tmp_batch_ GUARDED_BY(mutex_);
+  std::deque<Writer*> writers_;
+  WriteBatch* tmp_batch_;
 
-  SnapshotList snapshots_ GUARDED_BY(mutex_);
+  SnapshotList snapshots_;
 
-  VersionSet* const versions_ GUARDED_BY(mutex_);
+  VersionSet* const versions_;
 
   // Files to protect from deletion because they are ongoing compactions
-  std::set<uint64_t> pending_outputs_ GUARDED_BY(mutex_);
+  std::set<uint64_t> pending_outputs_;
 
-  bool bg_compaction_scheduled_ GUARDED_BY(mutex_);
-  Status bg_error_ GUARDED_BY(mutex_);
+  bool bg_compaction_scheduled_;
+  Status bg_error_;
 
   ThreadPool pool_;
 };

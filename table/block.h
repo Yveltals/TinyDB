@@ -4,35 +4,34 @@
 
 #include "common/comparator.h"
 #include "common/iterator.h"
+#include "iterator/iterator_block.h"
 #include "table/format.h"
 
 namespace tinydb {
 
 class Block {
  public:
-  explicit Block(const BlockContents& contents)
-      : data_(contents.data.data()),
-        size_(contents.data.size()),
-        owned_(contents.heap_allocated) {
+  // Data in BlockContents will move to Block
+  explicit Block(BlockContents& contents)
+      : data_(std::move(contents.data)), size_(contents.size) {
     if (size_ < sizeof(uint32_t)) {
       size_ = 0; // Error marker
     }
   }
   Block(const Block&) = delete;
   Block& operator=(const Block&) = delete;
-  ~Block() {
-    if (owned_) {
-      delete[] data_;
-    }
-  }
+  ~Block() = default;
 
   size_t size() const { return size_; }
-  std::unique_ptr<Iterator> NewIterator(const Comparator* comparator);
+
+  std::unique_ptr<Iterator> NewIterator(const Comparator* comparator) {
+    assert(size_);
+    return std::make_unique<IteratorBlock>(comparator, data_.get(), size_);
+  }
 
  private:
-  const char* data_;
+  std::unique_ptr<char[]> data_;
   size_t size_;
-  bool owned_; // Block owns data_[]
 };
 
 } // namespace tinydb

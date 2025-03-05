@@ -8,9 +8,6 @@
 
 #include "common/status.h"
 
-#define THREAD_ANNOTATION_ATTRIBUTE__(x) __attribute__((x))
-#define GUARDED_BY(x) THREAD_ANNOTATION_ATTRIBUTE__(guarded_by(x))
-
 namespace tinydb {
 
 constexpr const size_t kWritableFileBufferSize = 65536;

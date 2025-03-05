@@ -15,8 +15,7 @@ class FilterPolicy {
   virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const = 0;
 };
 
-// Callers must delete the result after any database that is using the
-// result has been closed.
+// Callers must delete the result after db has been closed
 const FilterPolicy* NewBloomFilterPolicy(int bits_per_key);
 
 } // namespace tinydb

@@ -64,7 +64,6 @@ class Status {
   }
 
   Status(Code code, const Slice& msg, const Slice& msg2);
-  static const char* CopyState(const char* s);
 
   // OK status has a null state_.  Otherwise, state_ is a new[] array
   // of the following form:

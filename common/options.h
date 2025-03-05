@@ -25,8 +25,7 @@ struct Options {
 };
 
 struct ReadOptions {
-  // Should the data read for this iteration be cached in memory?
-  // Callers may wish to set this field to false for bulk scans.
+  // Should the data read for this iteration be cached in memory
   bool fill_cache = true;
   const Snapshot* snapshot = nullptr;
 };

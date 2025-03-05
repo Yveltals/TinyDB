@@ -10,15 +10,19 @@
 namespace tinydb {
 
 void BlockHandle::EncodeTo(std::string* dst) const {
-  // Sanity check that all fields have been set
   assert(offset_ != UINT64_MAX);
   assert(size_ != UINT64_MAX);
   PutVarint64(dst, offset_);
   PutVarint64(dst, size_);
 }
 
-Status BlockHandle::DecodeFrom(Slice* input) {
-  if (GetVarint64(input, &offset_) && GetVarint64(input, &size_)) {
+Status BlockHandle::DecodeFrom(char* data, size_t n) {
+  Slice input(data, n);
+  return DecodeFrom(input);
+}
+
+Status BlockHandle::DecodeFrom(Slice& input) {
+  if (GetVarint64(&input, &offset_) && GetVarint64(&input, &size_)) {
     return Status::OK();
   } else {
     return Status::Corruption("bad block handle");
@@ -31,8 +35,13 @@ void Footer::EncodeTo(std::string* dst) const {
   dst->resize(2 * BlockHandle::kMaxEncodedLength); // Padding
 }
 
-Status Footer::DecodeFrom(Slice* input) {
-  if (input->size() < kEncodedLength) {
+Status Footer::DecodeFrom(char* data, size_t n) {
+  Slice input(data, n);
+  return DecodeFrom(input);
+}
+
+Status Footer::DecodeFrom(Slice& input) {
+  if (input.size() < kEncodedLength) {
     return Status::Corruption("not an sstable (footer too short)");
   }
   Status result = filter_handle_.DecodeFrom(input);
@@ -44,11 +53,11 @@ Status Footer::DecodeFrom(Slice* input) {
 
 Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
                  const BlockHandle& handle, BlockContents* result) {
-  result->data = Slice();
+  result->size = 0;
+  result->data.reset();
   result->cachable = false;
-  result->heap_allocated = false;
 
-  size_t n = static_cast<size_t>(handle.size());
+  auto n = handle.size();
   std::unique_ptr<char[]> buf(new char[n]);
   Slice contents;
   Status s = file->Read(handle.offset(), n, &contents, buf.get());
@@ -58,8 +67,8 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   if (contents.size() != n) {
     return Status::Corruption("truncated block read");
   }
-  result->data = Slice(buf.get(), n);
-  result->heap_allocated = true;
+  result->size = n;
+  result->data = std::move(buf);
   result->cachable = true;
   return Status::OK();
 }

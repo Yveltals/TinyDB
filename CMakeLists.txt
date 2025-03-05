@@ -7,16 +7,11 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_EXTENSIONS OFF)
 endif(NOT CMAKE_CXX_STANDARD)
 
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-Wthread-safety HAVE_CLANG_THREAD_SAFETY)
-
 include(GNUInstallDirs)
-
 include_directories(
   "${PROJECT_BINARY_DIR}/include"
   "."
 )
-
 add_subdirectory("third_party/fmt")
 
 # ###########################################################
@@ -37,7 +32,6 @@ target_sources(tinydb
   "iterator/iterator_two_level.cc"
   "log/log_reader.cc"
   "log/log_writer.cc"
-  "table/block.cc"
   "table/block_builder.cc"
   "table/filter_block.cc"
   "table/format.cc"
@@ -64,13 +58,6 @@ target_include_directories(tinydb
 
 set_target_properties(tinydb
   PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
-
-if(HAVE_CLANG_THREAD_SAFETY)
-  target_compile_options(tinydb
-    PUBLIC
-    -Werror -Wthread-safety)
-endif(HAVE_CLANG_THREAD_SAFETY)
-
 target_link_libraries(tinydb PRIVATE fmt::fmt)
 
 # ###########################################################

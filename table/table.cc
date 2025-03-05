@@ -28,7 +28,7 @@ Status Table::Open(const Options& options,
   if (!s.ok()) return s;
 
   Footer footer;
-  s = footer.DecodeFrom(&footer_input);
+  s = footer.DecodeFrom(footer_input);
   if (!s.ok()) return s;
 
   // Read the index block
@@ -56,26 +56,23 @@ void Table::ReadFilter(const Footer& footer) {
     return;
   }
   BlockHandle filter_handle;
-  if (!filter_handle.DecodeFrom(&contents.data).ok()) {
+  if (!filter_handle.DecodeFrom(contents.data.get(), contents.size).ok()) {
     return;
   }
   filter_offset_ = filter_handle.offset();
   // Read the filter block
-  BlockContents block;
-  if (!ReadBlock(file_.get(), opt, filter_handle, &block).ok()) {
+  if (!ReadBlock(file_.get(), opt, filter_handle, &contents).ok()) {
     return;
   }
-  if (block.heap_allocated) {
-    filter_data_ = block.data.data(); // Will need to delete later
-  }
-  filter_ = new FilterBlockReader(options_.filter_policy, block.data);
+  filter_ = new FilterBlockReader(options_.filter_policy,
+                                  std::move(contents.data), contents.size);
 }
 
 static void DeleteCachedBlock(const Slice& key, std::any value) {
   delete std::any_cast<Block*>(value);
 }
 
-// Read data block (maybe from cache), return IteratorBlock to seek keys
+// Read data block from cache or file, return IteratorBlock to seek keys
 std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
                                              const ReadOptions& options,
                                              const Slice& handle_value) {
@@ -85,7 +82,7 @@ std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
 
   BlockHandle handle;
   Slice input = handle_value;
-  Status st = handle.DecodeFrom(&input);
+  Status st = handle.DecodeFrom(input);
   if (st.ok()) {
     BlockContents contents;
     if (block_cache) {
@@ -118,9 +115,15 @@ std::unique_ptr<Iterator> Table::BlockReader(const Table* table,
     return NewErrorIterator(st);
   }
   auto iter = block->NewIterator(table->options_.comparator);
+
+  // Clean the Block allocated in heap
   if (!cache_handle) {
+    // If not cached, delete the block after the iterator is destroyed
     iter->RegisterCleanup([block] { delete block; });
   } else {
+    // When the iterator is destroyed:
+    // Cache::Uref() will invoke DeleteCachedBlock to delete the Block,
+    // Then clean up the Cache node associated with Block*
     iter->RegisterCleanup(
         [block_cache, cache_handle] { block_cache->Release(cache_handle); });
   }
@@ -145,7 +148,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& key,
   if (iiter->Valid()) {
     Slice handle_value = iiter->value();
     BlockHandle handle;
-    auto st = handle.DecodeFrom(&handle_value);
+    auto st = handle.DecodeFrom(handle_value);
     if (st.ok() && filter_ && !filter_->KeyMayMatch(handle.offset(), key)) {
       // Not found by filter
     } else {
@@ -174,7 +177,7 @@ uint64_t Table::ApproximateOffsetOf(const Slice& key) const {
   if (index_iter->Valid()) {
     BlockHandle handle;
     Slice input = index_iter->value();
-    Status s = handle.DecodeFrom(&input);
+    Status s = handle.DecodeFrom(input);
     if (s.ok()) {
       return handle.offset();
     }

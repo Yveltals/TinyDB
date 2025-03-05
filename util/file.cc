@@ -17,64 +17,6 @@ namespace tinydb {
 
 namespace fs = std::filesystem;
 
-Status SequentialFile::Read(size_t n, Slice* result, char* buffer) {
-  if (!file_.is_open()) {
-    return Status::IOError(filename_, std::strerror(errno));
-  }
-  file_.read(buffer, n);
-  *result = Slice(buffer, file_.gcount());
-  if (file_.gcount() != n) {
-    return Status::IOError(filename_, "read bytes not enough");
-  }
-  return Status::OK();
-}
-
-Status WritableFile::Append(const Slice& data) {
-  size_t size = data.size();
-  const char* write_data = data.data();
-  if (!IsAvailable(size)) {
-    return Flush();
-  }
-  memcpy(buffer_.get() + buffer_used_, data.data(), size);
-  buffer_used_ += size;
-  return Status::OK();
-}
-
-Status WritableFile::Flush() {
-  if (!file_.is_open()) {
-    return Status::IOError(filename_, std::strerror(errno));
-  }
-  file_ << std::string(buffer_.get(), buffer_used_);
-  buffer_used_ = 0;
-  return Status::OK();
-}
-
-Status WritableFile::Sync() {
-  auto st = Flush();
-  file_.flush();
-  return st;
-}
-
-Status WritableFile::Close() {
-  auto st = Flush();
-  file_.close();
-  return st;
-}
-
-Status RandomAccessFile::Read(uint64_t offset, size_t n, Slice* result,
-                              char* buffer) {
-  if (!file_.is_open()) {
-    return Status::IOError(filename_, std::strerror(errno));
-  }
-  file_.seekg(offset);
-  file_.read(buffer, n);
-  *result = Slice(buffer, file_.gcount());
-  if (file_.gcount() != n) {
-    return Status::IOError(filename_, "read bytes not enough");
-  }
-  return Status::OK();
-}
-
 std::unique_ptr<SequentialFile> File::NewSequentialFile(
     const std::string& filename) {
   return std::make_unique<SequentialFile>(filename);
@@ -183,6 +125,64 @@ Status ReadFileToString(File* file, const std::string& fname,
     }
   }
   return s;
+}
+
+Status SequentialFile::Read(size_t n, Slice* result, char* buffer) {
+  if (!file_.is_open()) {
+    return Status::IOError(filename_, std::strerror(errno));
+  }
+  file_.read(buffer, n);
+  *result = Slice(buffer, file_.gcount());
+  if (file_.gcount() != n) {
+    return Status::IOError(filename_, "read bytes not enough");
+  }
+  return Status::OK();
+}
+
+Status RandomAccessFile::Read(uint64_t offset, size_t n, Slice* result,
+                              char* buffer) {
+  if (!file_.is_open()) {
+    return Status::IOError(filename_, std::strerror(errno));
+  }
+  file_.seekg(offset);
+  file_.read(buffer, n);
+  *result = Slice(buffer, file_.gcount());
+  if (file_.gcount() != n) {
+    return Status::IOError(filename_, "read bytes not enough");
+  }
+  return Status::OK();
+}
+
+Status WritableFile::Append(const Slice& data) {
+  size_t size = data.size();
+  const char* write_data = data.data();
+  if (!IsAvailable(size)) {
+    return Flush();
+  }
+  memcpy(buffer_.get() + buffer_used_, data.data(), size);
+  buffer_used_ += size;
+  return Status::OK();
+}
+
+Status WritableFile::Flush() {
+  if (!file_.is_open()) {
+    return Status::IOError(filename_, std::strerror(errno));
+  }
+  file_ << std::string(buffer_.get(), buffer_used_);
+  buffer_used_ = 0;
+  return Status::OK();
+}
+
+Status WritableFile::Sync() {
+  auto st = Flush();
+  file_.flush();
+  return st;
+}
+
+Status WritableFile::Close() {
+  auto st = Sync();
+  file_.close();
+  return st;
 }
 
 } // namespace tinydb

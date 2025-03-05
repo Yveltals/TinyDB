@@ -14,7 +14,7 @@ class ThreadPool {
  public:
   ThreadPool(size_t num_threads = 1) : stop_(false) {
     for (size_t i = 0; i < num_threads; ++i) {
-      workers_.emplace_back([this]() { this->workerThread(); });
+      workers_.emplace_back([this]() { this->WorkerThread(); });
     }
   }
 
@@ -42,7 +42,7 @@ class ThreadPool {
   }
 
  private:
-  void workerThread() {
+  void WorkerThread() {
     while (true) {
       std::function<void()> task;
       {

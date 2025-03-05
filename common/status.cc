@@ -1,17 +1,11 @@
 #include "common/status.h"
 
+#include <fmt/core.h>
+
 #include <cstdio>
 #include <cstring>
 
 namespace tinydb {
-
-const char* Status::CopyState(const char* state) {
-  uint32_t size;
-  std::memcpy(&size, state, sizeof(size));
-  char* result = new char[size + 5];
-  std::memcpy(result, state, size + 5);
-  return result;
-}
 
 Status::Status(Code code, const Slice& msg, const Slice& msg2) {
   assert(code != kOk);
@@ -34,35 +28,31 @@ std::string Status::ToString() const {
   if (state_ == nullptr) {
     return "OK";
   } else {
-    char tmp[30];
-    const char* type;
+    uint32_t length;
+    std::string result;
     switch (code()) {
       case kOk:
-        type = "OK";
+        result = "OK";
         break;
       case kNotFound:
-        type = "NotFound: ";
+        result = "NotFound: ";
         break;
       case kCorruption:
-        type = "Corruption: ";
+        result = "Corruption: ";
         break;
       case kNotSupported:
-        type = "Not implemented: ";
+        result = "Not implemented: ";
         break;
       case kInvalidArgument:
-        type = "Invalid argument: ";
+        result = "Invalid argument: ";
         break;
       case kIOError:
-        type = "IO error: ";
+        result = "IO error: ";
         break;
       default:
-        std::snprintf(tmp, sizeof(tmp),
-                      "Unknown code(%d): ", static_cast<int>(code()));
-        type = tmp;
+        result = fmt::format("Unknown code({})", static_cast<int>(code()));
         break;
     }
-    std::string result(type);
-    uint32_t length;
     std::memcpy(&length, state_, sizeof(length));
     result.append(state_ + 5, length);
     return result;

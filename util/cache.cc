@@ -11,8 +11,6 @@
 
 namespace tinydb {
 
-Cache::~Cache() {}
-
 namespace {
 
 struct LRUHandle {
@@ -57,7 +55,7 @@ class LRUCache {
       auto next = e->next;
       assert(e->in_cache);
       e->in_cache = false;
-      assert(e->refs == 1); // Invariant of lru_ list
+      assert(e->refs == 1);
       Unref(e);
       e = next;
     }
@@ -69,7 +67,6 @@ class LRUCache {
   Cache::Handle* Lookup(const Slice& key);
   void Release(Cache::Handle* e);
   void Erase(const Slice& key);
-  // void Prune();
   size_t TotalCharge() {
     std::unique_lock<std::mutex> l(mutex_);
     return usage_;
@@ -86,12 +83,12 @@ class LRUCache {
   std::mutex mutex_;
   size_t usage_;
 
-  // dummy head of LRU list.
-  // lru.prev is newest entry, lru.next is oldest entry.
+  // Dummy head of LRU list.
+  // Lru.prev is newest entry, lru.next is oldest entry.
   // Entries have refs==1 and in_cache==true.
   LRUHandle lru_;
 
-  // dummy head of in-use list
+  // Dummy head of in-use list
   // Entries are in use by clients, and have refs >= 2 and in_cache == true.
   LRUHandle in_use_;
 
@@ -177,8 +174,8 @@ Cache::Handle* LRUCache::Insert(const Slice& key, std::any value, size_t charge,
   return reinterpret_cast<Cache::Handle*>(e);
 }
 
-// finish removing *e from the cache;
-// it has already been removed from the hash table.
+// Finish removing *e from the cache.
+// It has already been removed from the hash table
 void LRUCache::FinishErase(LRUHandle* e) {
   if (e != nullptr) {
     assert(e->in_cache);
@@ -256,7 +253,7 @@ class ShardedLRUCache : public Cache {
   }
 };
 
-} // end anonymous namespace
+} //  namespace
 
 Cache* NewLRUCache(size_t capacity) { return new ShardedLRUCache(capacity); }
 

@@ -11,7 +11,7 @@
 
 namespace tinydb {
 
-// Input: internal_key, value
+// Input: InternalKey and Value
 using HandleResult = std::function<void(const Slice&, const Slice&)>;
 
 class Table {
@@ -23,7 +23,6 @@ class Table {
   Table& operator=(const Table&) = delete;
   ~Table() {
     delete filter_;
-    delete[] filter_data_;
     delete index_block_;
   }
 
@@ -39,7 +38,6 @@ class Table {
         file_(std::move(file)),
         cache_id_(cache_id),
         filter_(nullptr),
-        filter_data_(nullptr),
         index_block_(index_block) {}
 
   static std::unique_ptr<Iterator> BlockReader(const Table* table,
@@ -53,11 +51,10 @@ class Table {
 
   Options options_;
   Status status_;
-  std::unique_ptr<RandomAccessFile> file_;
   uint64_t cache_id_;
-  FilterBlockReader* filter_;
-  const char* filter_data_;
+  std::unique_ptr<RandomAccessFile> file_;
   Block* index_block_;
+  FilterBlockReader* filter_;
   uint64_t filter_offset_;
 };
 

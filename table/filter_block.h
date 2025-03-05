@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -33,13 +34,14 @@ class FilterBlockBuilder {
 
 class FilterBlockReader {
  public:
-  // REQUIRES: "contents" and *policy must stay live while *this is live.
-  FilterBlockReader(const FilterPolicy* policy, const Slice& contents);
+  // Data in BlockContents will move to FilterBlockReader
+  FilterBlockReader(const FilterPolicy* policy, std::unique_ptr<char[]> data,
+                    size_t size);
   bool KeyMayMatch(uint64_t block_offset, const Slice& key);
 
  private:
   const FilterPolicy* policy_;
-  const char* data_;   // Pointer to filter data (at block-start)
+  std::unique_ptr<char[]> data_;
   const char* offset_; // Pointer to beginning of offset array (at block-end)
   size_t num_;         // Number of entries in offset array
   size_t base_lg_;     // Encoding parameter (kFilterBaseLg)

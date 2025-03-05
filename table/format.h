@@ -21,7 +21,8 @@ class BlockHandle {
   void set_size(uint64_t size) { size_ = size; }
 
   void EncodeTo(std::string* dst) const;
-  Status DecodeFrom(Slice* input);
+  Status DecodeFrom(Slice& input);
+  Status DecodeFrom(char* input, size_t n);
 
  private:
   uint64_t offset_;
@@ -39,7 +40,8 @@ class Footer {
   void set_index_handle(const BlockHandle& h) { index_handle_ = h; }
 
   void EncodeTo(std::string* dst) const;
-  Status DecodeFrom(Slice* input);
+  Status DecodeFrom(Slice& input);
+  Status DecodeFrom(char* input, size_t n);
 
  private:
   BlockHandle filter_handle_;
@@ -47,9 +49,9 @@ class Footer {
 };
 
 struct BlockContents {
-  Slice data;          // Actual contents of data
-  bool cachable;       // True iff data can be cached
-  bool heap_allocated; // True iff caller should delete[] data.data()
+  std::unique_ptr<char[]> data; // data contents
+  size_t size;                  // data length
+  bool cachable;                // True if data can be cached
 };
 
 // Read the block identified by "handle" from "file"

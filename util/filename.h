@@ -54,8 +54,7 @@ std::string InfoLogFileName(const std::string& dbname);
 std::string OldInfoLogFileName(const std::string& dbname);
 
 // If filename is a tinydb file, store the type of the file in *type.
-// The number encoded in the filename is stored in *number.  If the
-// filename was successfully parsed, returns true.  Else return false.
+// The number encoded in the filename is stored in *number.
 bool ParseFileName(const std::string& filename, uint64_t* number,
                    FileType* type);
 
